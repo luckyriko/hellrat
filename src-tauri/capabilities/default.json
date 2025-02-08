@@ -2,7 +2,9 @@
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
   "description": "Capability for the main window",
-  "windows": ["main"],
+  "windows": [
+    "main"
+  ],
   "permissions": [
     "core:default",
     "opener:default",
@@ -18,6 +20,7 @@
     "fs:allow-remove",
     "fs:allow-read-text-file",
     "fs:allow-write-text-file",
-    "fs:scope-appconfig-recursive"
+    "fs:scope-appconfig-recursive",
+    "os:default"
   ]
 }

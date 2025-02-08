@@ -52,7 +52,7 @@
 
 <script setup>
 import { ref, reactive, onMounted } from 'vue';
-import path from "path-browserify";
+import { platform } from '@tauri-apps/plugin-os';
 import { open } from '@tauri-apps/plugin-dialog';
 import { invoke } from '@tauri-apps/api/core';
 import { appConfigDir, appDataDir, homeDir } from '@tauri-apps/api/path';
@@ -71,6 +71,9 @@ onMounted(async () => {
     background: 'rgba(0, 0, 0, 0.7)',
   })
   try {
+    const currentPlatform = platform();
+    console.log('当前环境是 ', currentPlatform);
+
     // 获取APP配置目录的完整路径
     const appConfigDirPath = await appConfigDir();
     // const appDataDirPath = await appDataDir();
@@ -90,7 +93,13 @@ onMounted(async () => {
     // 不存在配置文件则去创建
     const flag = await exists('config.json', { baseDir: BaseDirectory.AppConfig });
     if (!flag) {
-      const modsDir = path.join(appConfigDirPath, 'mods');
+      let modsDir = '';
+      if (currentPlatform === 'windows') {
+        modsDir = appConfigDirPath + '\\mods';
+      } else{
+        modsDir = appConfigDirPath + '/mods';
+      }
+
       const modsDirExists = await exists('mods', {
         baseDir: BaseDirectory.AppConfig,
       });
