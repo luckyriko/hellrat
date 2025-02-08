@@ -3,16 +3,26 @@ use std::path::Path;
 use std::fs;
 
 #[tauri::command]
-pub fn open_win_folder(path: String) -> Result<(), String> {
-    if Path::new(&path).exists() {
-        Command::new("explorer")
-            .arg(path)
-            .spawn()
-            .map_err(|e| format!("Failed to open folder: {}", e))?; // 错误信息
-        Ok(()) // 成功时返回空
-    } else {
-        Err("Path does not exist!".to_string()) // 路径不存在
+pub fn open_folder(path: String) -> Result<(), String> {
+    if !Path::new(&path).exists() {
+        return Err("路径不存在".to_string());
     }
+    let mut command = if cfg!(target_os = "windows") {
+        Command::new("explorer")
+    } else if cfg!(target_os = "macos") {
+        Command::new("open")
+    } else if cfg!(target_os = "linux") {
+        Command::new("xdg-open")
+    } else {
+        return Err("不支持的操作系统".to_string());
+    };
+
+    command
+        .arg(&path)
+        .spawn()
+        .map_err(|e| format!("打开文件夹失败: {}", e))?;
+
+    Ok(())
 }
 
 #[tauri::command(rename_all = "snake_case")]

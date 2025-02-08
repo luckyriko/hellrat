@@ -51,7 +51,8 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted } from 'vue';
+import path from "path-browserify";
 import { open } from '@tauri-apps/plugin-dialog';
 import { invoke } from '@tauri-apps/api/core';
 import { appConfigDir, appDataDir, homeDir } from '@tauri-apps/api/path';
@@ -89,7 +90,7 @@ onMounted(async () => {
     // 不存在配置文件则去创建
     const flag = await exists('config.json', { baseDir: BaseDirectory.AppConfig });
     if (!flag) {
-      const modsDir = appConfigDirPath + '\\mods';
+      const modsDir = path.join(appConfigDirPath, 'mods');
       const modsDirExists = await exists('mods', {
         baseDir: BaseDirectory.AppConfig,
       });
@@ -131,7 +132,7 @@ async function openDir(path) {
     return;
   }
   try {
-    await invoke('open_win_folder', { path });
+    await invoke('open_folder', { path });
     // console.log('Folder opened successfully!');
   } catch (error) {
     console.error('Failed to open folder:', error);
@@ -156,7 +157,7 @@ const onModsSelect = async () => {
   const selectedPath = await open({
     multiple: false,
     directory: true,
-    title: "请选择Mods临时存储路径",
+    title: "请选择Mods存档路径",
   });
   if (selectedPath) {
     form.modsDir = selectedPath;

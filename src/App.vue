@@ -1,11 +1,10 @@
 <script setup>
 import { ref } from "vue";
-import { RouterLink, RouterView } from 'vue-router'
-import HelloWorld from './components/HelloWorld.vue'
+import { RouterLink, RouterView } from "vue-router";
+import HelloWorld from "./components/HelloWorld.vue";
 // import { invoke } from "@tauri-apps/api/core";
 // const greetMsg = ref("");
 // const name = ref("");
-
 
 // async function greet() {
 //   // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
@@ -17,7 +16,7 @@ import HelloWorld from './components/HelloWorld.vue'
   <div class="page">
     <div class="left">
       <header>
-        Riko
+        <div class="logo-text">Mods管理器</div>
         <!-- <img alt="app logo" class="logo" src="@src/assets/icon.png" width="100" height="100" /> -->
       </header>
       <nav>
@@ -37,7 +36,6 @@ import HelloWorld from './components/HelloWorld.vue'
   <!-- <footer>
     <HelloWorld msg="You did it!" />
   </footer> -->
-
 </template>
 
 <style scoped lang="scss">
@@ -49,6 +47,15 @@ import HelloWorld from './components/HelloWorld.vue'
     width: 100px;
     height: 100vh;
     background-color: #222;
+
+    .logo-text{
+      width: 100px;
+      height: 40px;
+      background-color: skyblue;
+      text-align: center;
+      line-height: 40px;
+      color: purple;
+    }
 
     nav {
       display: flex;
@@ -68,7 +75,7 @@ import HelloWorld from './components/HelloWorld.vue'
     }
   }
 
-  .right{
+  .right {
     width: 100%;
     height: 100vh;
   }
