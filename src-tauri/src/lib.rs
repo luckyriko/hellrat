@@ -1,6 +1,9 @@
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
 mod fs;
+mod db;
 use crate::fs as my_fs;
+use crate::db as my_db;
+
 
 #[tauri::command]
 fn greet(name: &str) -> String {
@@ -24,8 +27,11 @@ pub fn run() {
             greet,
             my_custom_command,
             my_fs::open_folder,
+            my_fs::get_folder_first_image,
             my_fs::copy_files,
-            my_fs::transfer_and_rename_files
+            my_fs::copy_and_rename_files,
+            my_db::db_operate_test,
+            my_db::get_mod_records,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

@@ -1,7 +1,7 @@
 <template>
   <el-scrollbar max-height="100vh">
     <div class="container">
-      <el-row>
+      <!-- <el-row>
         <el-col :span="24">
           <div class="title">安装Mod</div>
         </el-col>
@@ -21,13 +21,13 @@
         <el-col :span="24">
           <div class="desc">5. 示例：使用时请选择"亚里亚玫红痛车"这个mod目录，不支持嵌套目录读取，文件结构如下：</div>
         </el-col>
-      </el-row>
+      </el-row> -->
 
       <el-tree style="max-width: 600px; color: red; margin-bottom: 20px;" :data="data" :props="defaultProps"
         @node-click="handleNodeClick" />
 
       <el-form ref="formRef" :model="form" label-width="100px" style="max-width: 700px" :rules="rules">
-        <el-form-item label="Mod文件夹" prop="directory">
+        <el-form-item label="Mod目录" prop="directory">
           <el-col :span="17">
             <el-input v-model.trim="form.directory" />
           </el-col>
@@ -43,15 +43,28 @@
           <el-input v-model.trim="form.name" />
         </el-form-item>
 
-        <el-form-item label="类型">
-          <el-radio-group v-model="form.type">
+        <el-form-item label="类型" prop="mod_type">
+          <el-radio-group v-model="form.mod_type">
             <el-radio value="model">模型</el-radio>
-            <!-- <el-radio value="voice">音效</el-radio> -->
+            <el-radio value="voice">音频</el-radio>
           </el-radio-group>
         </el-form-item>
 
-        <!-- <el-form-item label="启用">
+        <el-form-item label="安装" prop="activate">
           <el-switch v-model="form.activate" />
+        </el-form-item>
+
+        <el-form-item label="预览图" prop="preview">
+          <div v-if="previewImg" class="image" @click="selectPreViewImg">
+            <el-image style="height: 150px" :src="previewImg" fit="fill" />
+            <el-icon class="close-icon" size="30" color="red"
+              @click.stop="removeImg"><i-ep-circle-close-filled /></el-icon>
+          </div>
+          <div v-else class="image" @click="selectPreViewImg">
+            <el-icon size="20" color="#666"><i-ep-plus /></el-icon>
+          </div>
+          <el-input v-model.trim="form.preview" type="hidden" />
+
         </el-form-item>
 
         <el-form-item label="作者" prop="author">
@@ -64,9 +77,10 @@
 
         <el-form-item label="详情" prop="desc">
           <el-input v-model="form.desc" type="textarea" />
-        </el-form-item> -->
+        </el-form-item>
+
         <el-form-item>
-          <el-button type="primary" :loading="loadingFlag" @click="onSubmit(formRef)">安装</el-button>
+          <el-button type="primary" :loading="loadingFlag" @click="onSubmit(formRef)">{{ buttonText }}</el-button>
           <el-button @click="resetForm(formRef)">重置</el-button>
         </el-form-item>
       </el-form>
@@ -76,9 +90,10 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { platform } from '@tauri-apps/plugin-os';
+import { ref, reactive, onMounted, toRaw, computed } from 'vue'
 import { open } from '@tauri-apps/plugin-dialog';
-import { invoke } from '@tauri-apps/api/core';
+import { invoke, convertFileSrc } from '@tauri-apps/api/core';
 import { readTextFile, BaseDirectory } from '@tauri-apps/plugin-fs';
 
 const loadingFlag = ref(false);
@@ -127,16 +142,13 @@ const data = [
     label: '亚里亚玫红痛车(Mod目录)',
     children: [
       {
-        label: '9ba626afa44a3aa3.patch_0',
+        label: '9ba626afa44a3aa3.patch_233',
       },
       {
         label: '9ba626afa44a3aa3.patch_666',
       },
       {
         label: '9ba626afa44a3aa3.patch_666.gpu_resources',
-      },
-      {
-        label: '9ba626afa44a3aa3.patch_666.stream',
       },
       {
         label: '9ba626afa44a3aa3.patch_888',
@@ -163,25 +175,55 @@ const form = reactive({
   name: '',
   directory: '',
   author: '',
-  activate: true,
+  activate: false,
   link: '',
-  type: 'model',
+  mod_type: 'model',
   desc: '',
+  preview: ''
 })
+
+const buttonText = computed(() => form.activate ? '安装' : '存档');
+
+const previewImg = computed(() => form.preview ? convertFileSrc(form.preview) : '');
+
+const selectPreViewImg = async () => {
+  const selectedPath = await open({
+    multiple: false,
+    directory: false,
+    title: "请选择预览图",
+  });
+
+
+  if (selectedPath) {
+    form.preview = selectedPath;
+  }
+
+}
+
+const removeImg = () => {
+  form.preview = '';
+}
 
 const onSelect = async () => {
   const selectedPath = await open({
     multiple: false,
     directory: true,
-    title: "请选择要安装的MOD文件夹",
+    title: "请选择要安装的MOD目录",
   });
 
 
   if (selectedPath) {
-    const lastPart = selectedPath.split("\\").pop();
+    const currentPlatform = platform();
+    const lastPart = currentPlatform === 'windows' ? selectedPath.split("\\").pop() : selectedPath.split("/").pop();
     form.directory = selectedPath;
     form.name = lastPart;
 
+    try {
+      const firstImagePath = await invoke("get_folder_first_image", { folderPath: selectedPath });
+      form.preview = firstImagePath;
+    } catch (error) {
+      console.error("Error:", error);
+    }
   }
 
 }
@@ -204,37 +246,43 @@ const rules = reactive({
     { min: 1, max: 255, message: '最少1个字符，最长255个字符', trigger: ['blur', 'change'] },
   ],
   directory: [
-    { required: true, message: '请选择mod文件夹', trigger: ['blur', 'change'] },
+    { required: true, message: '请选择mod目录', trigger: ['blur', 'change'] },
   ]
 })
 
 const onSubmit = async (formEl) => {
+  if (!gameDataDir.value || !modsDir.value) {
+    ElMessage.error('请先去设置里添加游戏data目录和mod存档目录');
+    return;
+  }
+
   if (!formEl) return;
   await formEl.validate(async (valid, fields) => {
     if (valid) {
 
-      if (!gameDataDir.value || !modsDir.value) {
-        ElMessage.error('请先去设置里添加游戏data目录和mod存档目录');
-        return;
-      }
       loadingFlag.value = true;
 
       console.log(666666666);
       try {
-        // 从下载目录移动到存档目录
-        let source_dir = form.directory;
-        let target_dir = modsDir.value + '\\' + form.name;
-        console.log('---从下载目录移动到存档目录---', source_dir, target_dir);
-        await invoke('copy_files', { source_dir, target_dir });
-        console.log('copy_files successfully!');
+        // 从下载目录copy到存档目录
+        // let source_dir = form.directory;
+        // let target_dir = modsDir.value + '\\' + form.name;
+        // console.log('---从下载目录移动到存档目录---', source_dir, target_dir);
+        // await invoke('copy_files', { source_dir, target_dir });
+        // console.log('copy_files successfully!');
 
-        // 从下载目录移动到游戏data目录并自动重命名排序
-        let src_dir = form.directory;
+        // 从下载目录copy到存档目录
+        // 从下载目录copy到游戏data目录并自动重命名排序
+        let down_dir = form.directory;
+        let record_dir = modsDir.value + '\\' + form.name;
         let data_dir = gameDataDir.value;
-        let prefix = '9ba626afa44a3aa3'
-        console.log('---从下载目录移动到游戏data目录并自动重命名排序---', src_dir, data_dir);
-        await invoke('transfer_and_rename_files', { src_dir, data_dir, prefix });
-        console.log('transfer_and_rename_files successfully!');
+        let mod_info = toRaw(form);
+        // mod_info.record_path = mod_info.name; // 不记录完整路径，只记录存档目录名，因为玩家可能会修改存档目录
+        console.log('---从下载目录移动到游戏data目录并自动重命名排序---', {
+          down_dir, record_dir, data_dir, mod_info
+        });
+        await invoke('copy_and_rename_files', { down_dir, record_dir, data_dir, mod_info });
+        console.log('copy_and_rename_files successfully!');
 
         ElMessage({
           message: '安装成功',
@@ -245,7 +293,7 @@ const onSubmit = async (formEl) => {
 
       } catch (error) {
         console.error('Failed to submit:', error);
-        ElMessage.error(error || '添加失败')
+        ElMessage.error(String(error) || '添加失败')
 
       } finally {
 
@@ -259,7 +307,8 @@ const onSubmit = async (formEl) => {
 
 const resetForm = (formEl) => {
   if (!formEl) return
-  formEl.resetFields()
+  formEl.resetFields();
+  console.log('---form.preview---', form);
 }
 
 </script>
@@ -280,5 +329,20 @@ const resetForm = (formEl) => {
   color: red;
   margin-bottom: 10px;
 
+}
+
+.image {
+  min-width: 150px;
+  height: 150px;
+  line-height: 150px;
+  text-align: center;
+  border: dashed 1px #999;
+  position: relative;
+
+  .close-icon {
+    position: absolute;
+    right: -10px;
+    top: -10px;
+  }
 }
 </style>

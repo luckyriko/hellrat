@@ -8,7 +8,7 @@
       </el-row>
 
       <el-form :model="form" label-width="150px" style="max-width: 760px" label-position="left">
-        <el-form-item label="配置存储路径">
+        <el-form-item label="设置存储路径">
           <el-col :span="18">
             <el-input v-model.trim="form.configDir" disabled />
           </el-col>
@@ -53,9 +53,9 @@
 <script setup>
 import { ref, reactive, onMounted } from 'vue';
 import { platform } from '@tauri-apps/plugin-os';
-import { open } from '@tauri-apps/plugin-dialog';
+import { open, save } from '@tauri-apps/plugin-dialog';
 import { invoke } from '@tauri-apps/api/core';
-import { appConfigDir, appDataDir, homeDir } from '@tauri-apps/api/path';
+import { appConfigDir, appDataDir, homeDir, join } from '@tauri-apps/api/path';
 import { exists, mkdir, create, readTextFile, writeTextFile, BaseDirectory } from '@tauri-apps/plugin-fs';
 
 const form = reactive({
@@ -65,6 +65,10 @@ const form = reactive({
 })
 
 onMounted(async () => {
+
+  await invoke('db_operate_test', {});
+
+
   const loading = ElLoading.service({
     lock: true,
     text: 'Loading',
@@ -93,12 +97,13 @@ onMounted(async () => {
     // 不存在配置文件则去创建
     const flag = await exists('config.json', { baseDir: BaseDirectory.AppConfig });
     if (!flag) {
-      let modsDir = '';
-      if (currentPlatform === 'windows') {
-        modsDir = appConfigDirPath + '\\mods';
-      } else{
-        modsDir = appConfigDirPath + '/mods';
-      }
+      // let modsDir = '';
+      // if (currentPlatform === 'windows') {
+      //   modsDir = appConfigDirPath + '\\mods';
+      // } else {
+      //   modsDir = appConfigDirPath + '/mods';
+      // }
+      let modsDir = await join(appConfigDirPath, 'mods');
 
       const modsDirExists = await exists('mods', {
         baseDir: BaseDirectory.AppConfig,
@@ -154,7 +159,7 @@ const onSelect = async () => {
   const selectedPath = await open({
     multiple: false,
     directory: true,
-    title: "请选择游戏里的Mods安装路径",
+    title: "请选择游戏里的Mods安装目录",
   });
   if (selectedPath) {
     form.gameDataDir = selectedPath;
@@ -166,7 +171,7 @@ const onModsSelect = async () => {
   const selectedPath = await open({
     multiple: false,
     directory: true,
-    title: "请选择Mods存档路径",
+    title: "请选择Mods存档目录",
   });
   if (selectedPath) {
     form.modsDir = selectedPath;
