@@ -1,4 +1,4 @@
-use rusqlite::Connection;
+use rusqlite::{params_from_iter, ToSql, params, Connection};
 extern crate dirs;
 use anyhow::{anyhow, Context, Result};
 use serde::{Deserialize, Serialize};
@@ -26,37 +26,112 @@ pub struct GameModData {
 #[tauri::command]
 pub fn db_operate_test() {
 
-    get_mod_records();
 }
 
-/// 记录mod信息
+/// 删除单个mod安装文件
 #[tauri::command]
-pub fn get_mod_records() -> Result<Vec<GameMod>, String> {
-    create_db_table_if_not_exists().map_err(|e| format!("数据库初始化失败: {}", e))?;
-
+pub fn one_mod_delete(record_id: i64) -> Result<(), String> {
     let conn = open_data_db().map_err(|e| format!("数据库连接失败: {}", e))?;
 
-    let mut stmt = conn.prepare("SELECT * FROM mods_records ORDER BY id DESC").map_err(|e| format!("数据库创建查询失败: {}", e))?;
-    let records_iter = stmt.query_map([], |row| {
-        Ok(GameMod {
-            id: row.get(0).ok(),
-            name: row.get(1)?,
-            mod_type: row.get(2)?,
-            activate: row.get(3)?,
-            author: row.get(4)?,
-            link: row.get(5)?,
-            desc: row.get(6)?,
-            preview: row.get(7)?,
+    let mut stmt = conn
+        .prepare("SELECT activate FROM mods_records WHERE id = ?1")
+        .map_err(|e| format!("数据库创建查询失败: {}", e))?;
+    let activate: i64 = stmt.query_row(params![record_id], |row| row.get(0))
+        .map_err(|e| format!("数据查询失败: {}", e))?;
+
+    println!("activate:{}", activate);
+    if activate == 1 {
+        return Err("该mod正在使用，请先卸载后再删除".to_string());
+    }
+
+    del_one_mod_record(&conn, record_id).map_err(|e| format!("删除mod存档失败: {}", e))?;
+    
+
+    Ok(())
+}
+
+/// 查询mod安装的文件名
+#[tauri::command]
+pub fn get_mod_install_files(record_id: i64) -> Result<Vec<String>, String> {
+    let conn = open_data_db().map_err(|e| format!("数据库连接失败: {}", e))?;
+
+    let mut stmt = conn
+        .prepare("SELECT file FROM mods_install_files WHERE record_id = ?1")
+        .map_err(|e| format!("数据库创建查询失败: {}", e))?;
+    let files_iter = stmt
+        .query_map([record_id], |row| Ok(row.get::<_, String>(0)?))
+        .map_err(|e| format!("数据查询失败: {}", e))?;
+
+    let files = files_iter.filter_map(Result::ok).collect();
+
+    Ok(files)
+}
+
+/// 查询mod存档
+#[tauri::command]
+pub fn get_mod_records(mode_type: String, search: String) -> Result<Vec<GameMod>, String> {
+    let conn = open_data_db().map_err(|e| format!("数据库连接失败: {}", e))?;
+
+    let mut sql = String::from("SELECT * FROM mods_records WHERE mod_type = ?1 ORDER BY id DESC");
+    let mut params: Vec<&dyn ToSql> = Vec::new();
+    params.push(&mode_type);
+    let like_query = format!("%{}%", search);
+
+    if !search.is_empty() {
+        sql = String::from("SELECT * FROM mods_records WHERE mod_type = ?1 AND name LIKE ?2 ORDER BY id DESC");
+        params.push(&like_query);
+    }
+
+    let mut stmt = conn
+        .prepare(&sql)
+        .map_err(|e| format!("数据库创建查询失败: {}", e))?;
+    let records_iter = stmt
+        .query_map(params_from_iter(params), |row| {
+            Ok(GameMod {
+                id: row.get(0).ok(),
+                name: row.get(1)?,
+                mod_type: row.get(2)?,
+                activate: row.get(3)?,
+                author: row.get(4)?,
+                link: row.get(5)?,
+                desc: row.get(6)?,
+                preview: row.get(7)?,
+            })
         })
-    }).map_err(|e| format!("数据查询失败: {}", e))?;
+        .map_err(|e| format!("数据查询失败: {}", e))?;
 
     let records = records_iter.filter_map(Result::ok).collect();
 
     Ok(records)
 }
 
-/// 记录mod信息
-fn add_mod_records(conn: &Connection, game_mod: &GameModData) -> Result<i64> {
+/// 获取所有安装文件
+pub fn get_all_mods_install_files() -> Result<Vec<String>> {
+    let conn = open_data_db().context("数据库连接失败")?;
+
+    let mut stmt = conn
+        .prepare("SELECT file FROM mods_install_files").context("创建查询失败")?;
+    let files_iter = stmt
+        .query_map([], |row| Ok(row.get::<_, String>(0)?)).context("查询失败")?;
+
+    let files = files_iter.filter_map(Result::ok).collect();
+
+    Ok(files)
+}
+
+/// 更新mod存档
+fn update_mod_record(conn: &Connection, game_mod: &GameModData) -> Result<i64> {
+    let id = game_mod.info.id.unwrap();
+    conn.execute(
+        "UPDATE mods_records SET activate = ?1 WHERE id = ?2",
+        (u8::from(*(&game_mod.info.activate)), &id),
+    )?;
+
+    Ok(id)
+}
+
+/// 添加mod存档
+fn add_mod_record(conn: &Connection, game_mod: &GameModData) -> Result<i64> {
     conn.execute(
         "INSERT INTO mods_records (name, mod_type, activate, author, link, desc, preview) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
         (&game_mod.info.name, &game_mod.info.mod_type, u8::from(*(&game_mod.info.activate)) , &game_mod.info.author, &game_mod.info.link, &game_mod.info.desc, &game_mod.info.preview),
@@ -67,17 +142,37 @@ fn add_mod_records(conn: &Connection, game_mod: &GameModData) -> Result<i64> {
     Ok(last_record_id)
 }
 
-/// 记录mod安装的名称和模型序列号
-// fn add_mod_install(conn: &Connection, game_mod: &GameModData, last_record_id: i64) -> Result<i64> {
-//     conn.execute(
-//         "INSERT INTO mods_install (name, mod_type, record_id) VALUES (?1, ?2, ?3)",
-//         (&game_mod.info.name, &game_mod.info.mod_type, last_record_id),
-//     )?;
-//     let last_install_id = conn.last_insert_rowid();
-//     // println!("last_install_id: {last_install_id}");
+/// 删除一个mod存档
+fn del_one_mod_record(conn: &Connection, record_id: i64) -> Result<()> {
+    conn.execute(
+        "DELETE FROM mods_records WHERE id = ?1",
+        params![record_id]
+    )?;
 
-//     Ok(last_install_id)
-// }
+    conn.execute(
+        "DELETE FROM mods_install_files WHERE record_id = ?1",
+        params![record_id]
+    )?;
+
+    Ok(())
+}
+
+
+/// 一键卸载：删除所有mods_install_files安装记录，mods_records所有activate置为0
+pub fn uninstall_all_mod() -> Result<()> {
+    let mut conn = open_data_db()?;
+    let tx = conn.transaction()?;
+
+    tx.execute(
+        "UPDATE mods_records SET activate = 0",()
+    )?;
+
+    tx.execute(
+        "DELETE FROM mods_install_files",()
+    )?;
+    tx.commit()?;
+    Ok(())
+}
 
 /// 记录mod所安装的文件
 fn add_mod_install_files(conn: &Connection, game_mod: &GameModData, record_id: i64) -> Result<()> {
@@ -92,14 +187,29 @@ fn add_mod_install_files(conn: &Connection, game_mod: &GameModData, record_id: i
     Ok(())
 }
 
-pub fn add_mod(game_mod: GameModData) -> Result<()> {
-    create_db_table_if_not_exists().context("create data.db failed")?;
-
+pub fn update_mod(game_mod: GameModData) -> Result<()> {
     let mut conn = open_data_db()?;
     let tx = conn.transaction()?;
 
     // 存档记录
-    let record_id = add_mod_records(&tx, &game_mod)?; // tx causes rollback if this fails
+    let record_id = update_mod_record(&tx, &game_mod)?; // tx causes rollback if this fails
+
+    // 安装记录
+    if game_mod.info.activate {
+        add_mod_install_files(&tx, &game_mod, record_id)?; // tx causes rollback if this fails
+    }
+
+    tx.commit()?;
+    Ok(())
+}
+
+
+pub fn add_mod(game_mod: GameModData) -> Result<()> {
+    let mut conn = open_data_db()?;
+    let tx = conn.transaction()?;
+
+    // 存档记录
+    let record_id = add_mod_record(&tx, &game_mod)?; // tx causes rollback if this fails
 
     // 安装记录
     if game_mod.info.activate {
@@ -129,23 +239,9 @@ pub fn create_db_table_if_not_exists() -> Result<()> {
         (),
     )?;
 
-    // 已安装mods记录表，record_id用于查找展示mod信息
-    // conn.execute(
-    //     "CREATE TABLE IF NOT EXISTS mods_install (
-    //         id          INTEGER PRIMARY KEY AUTOINCREMENT,
-    //         name        TEXT NOT NULL,
-    //         mod_type    TEXT NOT NULL,
-    //         no_array    TEXT,
-    //         record_id   INTEGER
-
-    // )",
-    //     (),
-    // )?;
-
     // 已安装mods文件记录表，install_id用于表明哪些文件属于哪条记录
     conn.execute(
         "CREATE TABLE IF NOT EXISTS mods_install_files (
-            id          INTEGER PRIMARY KEY AUTOINCREMENT,
             record_id   INTEGER NOT NULL,
             file        TEXT NOT NULL
 
@@ -168,14 +264,14 @@ pub fn open_data_db() -> Result<Connection> {
         if !db_path.exists() {
             // 使用 create_dir_all 创建所有需要的嵌套目录
             fs::create_dir_all(path)?;
-            println!("Directory created");
+            // println!("Directory created");
         } else {
-            println!("Directory already exists");
+            // println!("Directory already exists");
         }
 
         // sqlite3的db文件路径=db_path
         db_path.push("data.db");
-        println!("{:?}", db_path);
+        // println!("{:?}", db_path);
         let path = db_path.to_string_lossy().to_string();
         let conn = Connection::open(path).context("Failed to open data.db")?;
 

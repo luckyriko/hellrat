@@ -65,10 +65,6 @@ const form = reactive({
 })
 
 onMounted(async () => {
-
-  await invoke('db_operate_test', {});
-
-
   const loading = ElLoading.service({
     lock: true,
     text: 'Loading',

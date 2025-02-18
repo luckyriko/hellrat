@@ -20,11 +20,11 @@ import HelloWorld from "./components/HelloWorld.vue";
         <!-- <img alt="app logo" class="logo" src="@src/assets/icon.png" width="100" height="100" /> -->
       </header>
       <nav>
-        <RouterLink to="/" class="nav-link">列表</RouterLink>
-        <RouterLink to="/add" class="nav-link">安装</RouterLink>
+        <RouterLink to="/" class="nav-link" active-class="active">列表</RouterLink>
+        <RouterLink to="/add" class="nav-link" active-class="active">安装</RouterLink>
         <!-- <RouterLink to="/import" class="nav-link">导入</RouterLink> -->
-        <RouterLink to="/setting" class="nav-link">设置</RouterLink>
-        <RouterLink to="/about" class="nav-link">关于</RouterLink>
+        <RouterLink to="/setting" class="nav-link" active-class="active">设置</RouterLink>
+        <RouterLink to="/about" class="nav-link" active-class="active">关于</RouterLink>
       </nav>
     </div>
     <div class="right">
@@ -69,7 +69,7 @@ import HelloWorld from "./components/HelloWorld.vue";
         margin: 10px 0;
       }
 
-      .nav-link:hover {
+      .active {
         color: red;
       }
     }

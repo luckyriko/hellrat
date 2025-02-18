@@ -1,9 +1,8 @@
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
-mod fs;
 mod db;
-use crate::fs as my_fs;
+mod fs;
 use crate::db as my_db;
-
+use crate::fs as my_fs;
 
 #[tauri::command]
 fn greet(name: &str) -> String {
@@ -16,9 +15,17 @@ fn my_custom_command() -> i32 {
     return 1;
 }
 
+fn init_database(_app: &tauri::AppHandle) -> tauri::Result<()> {
+    my_db::create_db_table_if_not_exists()?;
+    println!("init_database数据库初始化！");
+    Ok(())
+}
+
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_os::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_fs::init())
@@ -28,11 +35,23 @@ pub fn run() {
             my_custom_command,
             my_fs::open_folder,
             my_fs::get_folder_first_image,
-            my_fs::copy_files,
-            my_fs::copy_and_rename_files,
+            my_fs::down_copy_and_rename_files,
+            my_fs::remove_dir_all,
+            my_fs::uninstall_mods_all,
+            my_fs::deploy_mods,
             my_db::db_operate_test,
             my_db::get_mod_records,
+            my_db::get_mod_install_files,
         ])
+        .setup(|app| {
+            println!("Tauri 初始化逻辑执行！");
+
+            // 你可以在这里执行数据库初始化、全局变量设置等
+            let handle = app.handle();
+            init_database(&handle)?;
+
+            Ok(())
+        })
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

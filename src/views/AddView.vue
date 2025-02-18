@@ -95,6 +95,7 @@ import { ref, reactive, onMounted, toRaw, computed } from 'vue'
 import { open } from '@tauri-apps/plugin-dialog';
 import { invoke, convertFileSrc } from '@tauri-apps/api/core';
 import { readTextFile, BaseDirectory } from '@tauri-apps/plugin-fs';
+import { join } from '@tauri-apps/api/path';
 
 const loadingFlag = ref(false);
 const modsDir = ref("");
@@ -265,24 +266,16 @@ const onSubmit = async (formEl) => {
       console.log(666666666);
       try {
         // 从下载目录copy到存档目录
-        // let source_dir = form.directory;
-        // let target_dir = modsDir.value + '\\' + form.name;
-        // console.log('---从下载目录移动到存档目录---', source_dir, target_dir);
-        // await invoke('copy_files', { source_dir, target_dir });
-        // console.log('copy_files successfully!');
-
-        // 从下载目录copy到存档目录
-        // 从下载目录copy到游戏data目录并自动重命名排序
+        // 如果安装 从下载目录copy到游戏data目录并自动重命名排序
         let down_dir = form.directory;
-        let record_dir = modsDir.value + '\\' + form.name;
+        let record_dir = await join(modsDir.value, form.name);
         let data_dir = gameDataDir.value;
         let mod_info = toRaw(form);
-        // mod_info.record_path = mod_info.name; // 不记录完整路径，只记录存档目录名，因为玩家可能会修改存档目录
         console.log('---从下载目录移动到游戏data目录并自动重命名排序---', {
           down_dir, record_dir, data_dir, mod_info
         });
-        await invoke('copy_and_rename_files', { down_dir, record_dir, data_dir, mod_info });
-        console.log('copy_and_rename_files successfully!');
+        await invoke('down_copy_and_rename_files', { down_dir, record_dir, data_dir, mod_info });
+        console.log('down_copy_and_rename_files successfully!');
 
         ElMessage({
           message: '安装成功',
