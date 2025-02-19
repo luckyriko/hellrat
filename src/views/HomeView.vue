@@ -8,7 +8,7 @@
 
     <el-row :gutter="20">
       <el-col :span="3">
-        <el-segmented v-model="current" :options="options" size="default" @change="searchMod"/>
+        <el-segmented v-model="current" :options="options" size="default" @change="searchMod" />
       </el-col>
       <el-col :span="9">
         <el-input v-model="search" placeholder="请输入名称" clearable>
@@ -18,7 +18,10 @@
         </el-input>
       </el-col>
 
-      <el-col :span="3" :offset="6">
+      <el-col :span="3">
+        <el-button @click="activeAllMods" type="success" plain>全部启用</el-button>
+      </el-col>
+      <el-col :span="3" :offset="3">
         <el-button @click="uninstallAllMods" type="danger" plain>一键卸载</el-button>
       </el-col>
       <el-col :span="3">
@@ -26,23 +29,23 @@
       </el-col>
     </el-row>
 
-    <el-table ref="tableRef" :default-sort="{ prop: 'id', order: 'descending' }" :data="modsData" max-height="600"
+    <el-table ref="tableRef" :default-sort="{ prop: 'id', order: 'descending' }" :data="modsData" height="600"
       style="width: 100%" row-key="id" stripe @expand-change="getModDetail">
       <el-table-column type="expand">
         <template #default="props">
           <div style="margin-left: 20px;" v-if="props.row?.files && props.row.files.length > 0">
             <p v-for="(item, index) in props.row.files" :key="index">{{ item }}</p>
           </div>
-          <div style="margin-left: 20px;" v-else>未安装</div>
+          <div style="margin-left: 20px;" v-else>未安装 / 没有实际文件被安装</div>
         </template>
       </el-table-column>
-      <el-table-column prop="id" label="ID" sortable min-width="60" align="center" />
-      <el-table-column prop="name" label="名称" min-width="120">
+      <el-table-column prop="id" label="ID" sortable min-width="55" align="center" />
+      <el-table-column prop="name" label="名称" min-width="220">
         <template #default="scope">
           <div style="display: flex; flex-direction: row; align-items: center;">
             <div v-if="scope.row.link ? true : false">
               <el-link :underline="true" type="primary" @click="openBrowser(scope.row.link)">{{ scope.row.name
-                }}</el-link>
+              }}</el-link>
             </div>
             <div v-else>
               {{ scope.row.name }}
@@ -74,9 +77,9 @@
             style="--el-switch-on-color: #13ce66; --el-switch-off-color: #ff4949" active-text="是" inactive-text="否" />
         </template>
       </el-table-column>
-      <el-table-column prop="author" label="作者" align="center" />
+      <el-table-column prop="author" label="作者" show-overflow-tooltip align="center" />
       <!-- <el-table-column prop="link" label="链接" /> -->
-      <el-table-column property="desc" label="详情" width="240" show-overflow-tooltip align="center" />
+      <el-table-column property="desc" label="详情" width="140" show-overflow-tooltip align="center" />
       <!-- <el-table-column prop="preview" label="预览图" /> -->
       <el-table-column fixed="right" label="操作" min-width="180" align="center">
         <template #default="scope">
@@ -93,7 +96,7 @@
       </el-table-column>
     </el-table>
     <el-button class="mt-4" style="width: 100%" @click="onAddItem">
-      Add Item
+      测试新增
     </el-button>
   </div>
 </template>
@@ -147,6 +150,12 @@ onMounted(async () => {
   await getModsList();
 });
 
+async function activeAllMods() {
+  modsData.value.forEach(element => {
+    element.activate = true;
+  });
+}
+
 async function deploy() {
   if (!modsDir.value || !gameDataDir.value) {
     ElMessage.error('请先去设置里添加游戏data目录和mod存档目录');
@@ -177,7 +186,7 @@ async function deploy() {
           activate: element.activate
         })
       });
-      console.log(mod_activate_data);
+      // console.log(mod_activate_data);
 
       try {
         await invoke('deploy_mods', {
@@ -267,7 +276,8 @@ const uninstallAllMods = async () => {
       })
 
       try {
-        await invoke("uninstall_mods_all", { data_dir: gameDataDir.value });
+        let mod_type = current.value == '模型' ? 'model' : 'voice';
+        await invoke("uninstall_mods_all", { data_dir: gameDataDir.value, mod_type });
         await getModsList();
 
         ElMessage({

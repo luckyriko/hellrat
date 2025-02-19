@@ -7,6 +7,7 @@ use std::process::Command;
 use tauri::AppHandle;
 use tauri_plugin_dialog::DialogExt;
 
+/// 用于打开一个文件夹选择对话框，并阻塞当前线程，直到用户选择一个文件夹或取消选择。
 #[allow(dead_code)]
 #[tauri::command]
 pub fn select_one_folder(app: AppHandle) {
@@ -19,6 +20,7 @@ pub fn select_one_folder(app: AppHandle) {
     }
 }
 
+/// 获取指定目录的第一个图片路径
 #[tauri::command]
 pub fn get_folder_first_image(folder_path: String) -> Result<String, String> {
     let path = PathBuf::from(&folder_path);
@@ -44,6 +46,7 @@ pub fn get_folder_first_image(folder_path: String) -> Result<String, String> {
     Err("未找到任何图片文件".to_string())
 }
 
+/// 使用系统文件管理器打开文件夹
 #[tauri::command]
 pub fn open_folder(path: String) -> Result<(), String> {
     if !Path::new(&path).exists() {
@@ -67,6 +70,7 @@ pub fn open_folder(path: String) -> Result<(), String> {
     Ok(())
 }
 
+/// mod存档：从下载目录copy到存档目录
 #[tauri::command(rename_all = "snake_case")]
 pub fn copy_files_to_record(
     source_dir: &str,
@@ -139,15 +143,15 @@ pub fn copy_files_to_record(
     Ok(String::from(""))
 }
 
-/// 将源目录中的所有符合格式的文件批量传入目标目录，并按规则重命名
-///
+/// 从下载目录选择mod进行存档；如果安装置为是，则额外进行一步操作：从下载目录安装到游戏data目录
 /// # 参数
-/// - `down_dir`: 源目录路径
-/// - `data_dir`: 目标目录路径
-/// - `prefix`: 文件前缀（例如 `9ba626afa44a3aa3`）
+/// - `down_dir`: 下载目录
+/// - `record_dir` 存档目录
+/// - `data_dir`: 游戏data目录
+/// - `mod_info`: mod信息
 ///
 /// # 返回
-/// - `Result<Vec<String>, String>`: 返回成功处理的文件列表，或错误信息
+/// - `Result<(), String>`: 成功返回空，失败返回错误信息
 #[tauri::command(rename_all = "snake_case")]
 pub fn down_copy_and_rename_files(
     down_dir: &str,
@@ -155,7 +159,7 @@ pub fn down_copy_and_rename_files(
     data_dir: &str,
     mut mod_info: db::GameMod,
 ) -> Result<(), String> {
-    // 把mod存档并返回预览图片
+    // 从下载目录把mod存档并返回预览图片
     let preview_file = &mod_info.preview;
     mod_info.preview = copy_files_to_record(down_dir, record_dir, preview_file)?;
 
@@ -172,10 +176,12 @@ pub fn down_copy_and_rename_files(
             return Err(format!("Target directory '{}' does not exist.", data_dir));
         }
 
-        // 提取 `data` 目录中的最大编号
-        // 提取 `data` 目录中的最大编号
-        let max_number = get_data_dir_max_number(data_path)?;
-        processed_files = copy_and_rename_files(src_path, data_path, max_number)?;
+        if mod_info.mod_type == "model" {
+            processed_files = copy_and_rename_mod_files(src_path, data_path)?;
+        }else{
+            processed_files = copy_and_rename_voice_files(src_path, data_path)?;
+
+        }
     }
 
     // println!("mod_data: {:#?}", mod_info);
@@ -191,32 +197,44 @@ pub fn down_copy_and_rename_files(
     Ok(())
 }
 
+/// 根据id删除某个存档，前提是已禁用
 #[tauri::command(rename_all = "snake_case")]
 pub fn remove_dir_all(dir_path: &str, record_id: i64) -> Result<(), String> {
-    if Path::new(dir_path).exists() {
-        db::one_mod_delete(record_id)?;
 
+    // 不存在直接删除数据库里的记录；存在的话先查询安装状态，没有安装的才能删除
+    if Path::new(dir_path).exists() {
+ 
+        db::check_mod_activate(record_id)?;
         if fs::remove_dir_all(dir_path).is_ok() {
+            db::del_one_mod_record(record_id).map_err(|e| format!("删除mod存档失败: {}", e))?;
+
             println!("该目录 {} 删除成功", dir_path);
         } else {
             println!("该目录 {} 不存在或删除失败", dir_path);
             return Err("删除失败".to_string());
         }
+    }else{
+        db::del_one_mod_record(record_id).map_err(|e| format!("删除mod存档失败: {}", e))?;
     }
     println!("该目录 {} 下的文件已删除", dir_path);
     Ok(())
 }
 
+/// 一键卸载所有mod
 #[tauri::command(rename_all = "snake_case")]
-pub fn uninstall_mods_all(data_dir: &str) -> Result<(), String> {
-    let files = db::get_all_mods_install_files().map_err(|e| format!("{}", e))?;
-    db::uninstall_all_mod().map_err(|e| format!("mod卸载失败：{}", e))?;
-
+pub fn uninstall_mods_all(data_dir: &str, mod_type: &str) -> Result<(), String> {
     let dir_path = Path::new(data_dir);
     if !dir_path.exists() {
         return Err(format!("目录'{}'不存在", data_dir));
     }
 
+    // 先从数据库mods_install_files表查询已安装的文件记录
+    let files = db::get_all_mods_install_files(mod_type).map_err(|e| format!("{}", e))?;
+
+    // 再从数据库mods_install_files表删除已安装的文件记录
+    db::uninstall_all_mod(mod_type).map_err(|e| format!("mod卸载失败：{}", e))?;
+
+    // 根据查询到的文件进行遍历删除
     let errors: Vec<String> = files
         .into_par_iter()
         .map(|file| {
@@ -244,19 +262,25 @@ pub struct ModsActivate {
     pub activate: bool,
 }
 
+/// 应用安装：根据列表中的安装状态进行安装；
+/// 步骤：先一键卸载，再根据数据库里的状态值和前端传过来的部分状态值进行安装（要做数据融合，前端传过来的覆盖数据库里的值）
+/// 前端可能只传过来一个mod的状态值，其它的默认取数据库里的值
 #[tauri::command(rename_all = "snake_case")]
 pub fn deploy_mods(
     record_dir: &str,
     data_dir: &str,
-    mode_type: String,
+    mode_type: &str,
     mut mod_activate_data: Vec<ModsActivate>,
 ) -> Result<(), String> {
-    let mut mods = db::get_mod_records(mode_type, String::new())?;
+    let mut mods = db::get_mod_records(mode_type, "")?;
     // println!("old mods: {:#?}", mods);
 
     for item in &mut mods {
         // 查找id相同的元素，并更新activate值
-        if let Some(element) = mod_activate_data.iter_mut().find(|kk| kk.id == item.id.unwrap()) {
+        if let Some(element) = mod_activate_data
+            .iter_mut()
+            .find(|kk| kk.id == item.id.unwrap())
+        {
             item.activate = element.activate;
         }
     }
@@ -266,14 +290,14 @@ pub fn deploy_mods(
     println!("new mods: {:#?}", mods);
 
     // 先一键卸载
-    uninstall_mods_all(data_dir).map_err(|e| format!("mod部署时卸载失败：{}", e))?;
+    uninstall_mods_all(data_dir, mode_type).map_err(|e| format!("mod部署时卸载失败：{}", e))?;
 
     // 根据activate安装mod，从存档目录进行安装；更新mods_records安装状态和添加mods_install_files记录
     let mut errors = Vec::new(); // 用于收集错误信息
 
     for item in mods {
         let name: String = item.name.clone();
-        if let Err(e) = record_copy_and_rename_files(record_dir, data_dir, item){
+        if let Err(e) = record_copy_and_rename_files(record_dir, data_dir, item) {
             errors.push(format!("处理 {} 失败: {}", name, e));
         }
     }
@@ -285,10 +309,10 @@ pub fn deploy_mods(
     }
 }
 
-fn get_data_dir_max_number(data_path: &Path) -> Result<i32, String> {
+/// 获取游戏data目录最大的number补丁值
+fn get_data_dir_max_number(data_path: &Path, prefix: &str) -> Result<i32, String> {
     // 提取 `data` 目录中的最大编号
     let mut max_number = -1;
-    let prefix = String::from("9ba626afa44a3aa3");
     let patch_prefix = format!("{}.patch_", prefix);
 
     for entry in
@@ -304,6 +328,7 @@ fn get_data_dir_max_number(data_path: &Path) -> Result<i32, String> {
                 // println!("data目录-排序数字: {}", number);
                 max_number = max_number.max(number);
             } else {
+                // 如果不是字符串形式的i32整数会解析失败，意味着无法解析字符串和数字的组合
                 // println!("data目录-解析失败: {}", number_str);
             }
         }
@@ -313,18 +338,16 @@ fn get_data_dir_max_number(data_path: &Path) -> Result<i32, String> {
     Ok(max_number)
 }
 
-fn copy_and_rename_files(
-    src_path: &Path,
-    data_path: &Path,
-    mut max_number: i32,
-) -> Result<Vec<String>, String> {
-    let mut processed_files = vec![];
+/// 单个模型mod目录里的的多个补丁文件的复制、重命名函数
+fn copy_and_rename_mod_files(src_path: &Path, data_path: &Path) -> Result<Vec<String>, String> {
     let prefix = String::from("9ba626afa44a3aa3");
+    let mut max_number = get_data_dir_max_number(data_path, &prefix)?;
     let patch_prefix = format!("{}.patch_", prefix);
 
     // 处理源目录中的所有符合格式的文件
     // entries 就是目录中的所有文件和文件夹的集合
     let entries = fs::read_dir(src_path).map_err(|e| format!("读取存档目录失败: {}", e))?;
+    let mut processed_files = vec![];
 
     for entry in entries {
         let entry = entry.map_err(|e| format!(": {}", e))?;
@@ -392,11 +415,90 @@ fn copy_and_rename_files(
     Ok(processed_files)
 }
 
-// 从Mod存档目录复制和重命名到游戏data目录
+/// 单个音频mod目录里的的多个补丁文件的复制、重命名函数
+fn copy_and_rename_voice_files(src_path: &Path, data_path: &Path) -> Result<Vec<String>, String> {
+    let mut processed_files = vec![];
+
+    // 处理源目录中的所有符合格式的文件
+    // entries 就是目录中的所有文件和文件夹的集合
+    let entries = fs::read_dir(src_path).map_err(|e| format!("读取存档目录失败: {}", e))?;
+
+    for entry in entries {
+        let entry = entry.map_err(|e| format!(": {}", e))?;
+        let record_file_path = entry.path();
+
+        if let Some(file_name) = record_file_path
+            .file_name()
+            .map(|os_str| os_str.to_string_lossy())
+        {
+            let prefix = extract_name(&file_name);
+
+            // 过滤模型文件，不处理以'9ba626afa44a3aa3'开头的文件
+            // 按照extract_name函数规则提取前缀名，符合的返回名称，不符合的返回空字符串
+            // 不能是图片
+            if prefix != "9ba626afa44a3aa3" && !prefix.is_empty() && is_not_image(&file_name) {
+                let mut max_number = get_data_dir_max_number(data_path, prefix)?;
+
+                // 计算新的数字补丁编号
+                max_number += 1;
+
+                let new_patch_name = format!("{}.patch_{}", prefix, max_number);
+                let new_patch_path = data_path.join(&new_patch_name);
+                println!(
+                    "源路径：{}，新名称及路径：{}",
+                    record_file_path.display(),
+                    new_patch_path.display()
+                );
+
+                // 将文件复制到目标目录并重命名
+                fs::copy(&record_file_path, &new_patch_path).map_err(|e| {
+                    format!(
+                        "音频补丁主文件复制到游戏data目录失败 '{}' to '{}': {}",
+                        record_file_path.display(),
+                        new_patch_path.display(),
+                        e
+                    )
+                })?;
+
+                processed_files.push(new_patch_name.clone());
+
+                // 处理可能存在的附加文件 `.gpu_resources` 和 `.stream`
+                let extra_extensions = [".gpu_resources", ".stream"];
+                for ext in &extra_extensions {
+                    let extra_file_name = format!("{}{}", file_name, ext);
+                    let extra_file_path = src_path.join(&extra_file_name);
+                    // 如果补丁文件存在
+                    if extra_file_path.exists() {
+                        let new_extra_name = format!("{}{}", new_patch_name, ext);
+                        let new_extra_path = data_path.join(&new_extra_name);
+                        println!(
+                            "ext源路径：{}，新名称及路径：{}",
+                            extra_file_path.display(),
+                            new_extra_path.display()
+                        );
+
+                        fs::copy(&extra_file_path, &new_extra_path).map_err(|e| {
+                            format!(
+                                "音频补丁扩展文件复制到游戏data目录失败 '{}' to '{}': {}",
+                                extra_file_path.display(),
+                                new_extra_path.display(),
+                                e
+                            )
+                        })?;
+                        processed_files.push(new_extra_name);
+                    }
+                }
+            }
+        }
+    }
+    Ok(processed_files)
+}
+
+/// 从Mod存档目录复制和重命名到游戏data目录
 pub fn record_copy_and_rename_files(
     record_dir: &str,
     data_dir: &str,
-    mut mod_info: db::GameMod,
+    mod_info: db::GameMod,
 ) -> Result<(), String> {
     let mut processed_files = vec![];
 
@@ -415,12 +517,16 @@ pub fn record_copy_and_rename_files(
             return Err(format!("Target directory '{}' does not exist.", data_dir));
         }
 
-        // 提取 `data` 目录中的最大编号
-        let max_number = get_data_dir_max_number(data_path)?;
-
-        processed_files = copy_and_rename_files(src_path.as_path(), data_path, max_number)?;
+        if mod_info.mod_type == "model" {
+            processed_files = copy_and_rename_mod_files(src_path.as_path(), data_path)?;
+        } else {
+            processed_files = copy_and_rename_voice_files(src_path.as_path(), data_path)?;
+        }
     }
-    println!("{} {} processed_files: {:#?}",mod_info.name, mod_info.activate, processed_files);
+    println!(
+        "{} {} processed_files: {:#?}",
+        mod_info.name, mod_info.activate, processed_files
+    );
 
     let game_mod = db::GameModData {
         info: mod_info,
@@ -433,6 +539,56 @@ pub fn record_copy_and_rename_files(
     Ok(())
 }
 
+/// Some空值转换成None
 fn _empty_to_none(s: Option<String>) -> Option<String> {
     s.filter(|string| !string.is_empty())
 }
+
+/// 判断是否不是图片
+/// fn main() {
+///     let file1 = "document.txt";
+///     let file2 = "photo.jpg";
+///     let file3 = "no_extension";
+
+///     println!("{}", is_not_image(file1)); // true
+///     println!("{}", is_not_image(file2)); // false
+///     println!("{}", is_not_image(file3)); // true
+/// }
+fn is_not_image(file_name: &str) -> bool {
+    let image_extensions = [
+        "jpg", "jpeg", "png", "gif", "bmp", "webp", "tiff", "ico", "svg",
+    ];
+
+    match Path::new(file_name).extension() {
+        Some(ext) => !image_extensions.contains(&ext.to_string_lossy().to_lowercase().as_str()),
+        None => true, // 没有扩展名的文件也视为不是图片
+    }
+}
+
+/// 使用示例
+/// fn main() {
+///     let files = vec![
+///         "9ba626afa44a3aa3.patch_9",
+///         "346d785d6ca13ff4.patch_0",
+///         "18235e0c9ec0e636.patch_0",
+///         "abcde12345.patch_0.stream",
+///     ];
+///     let extracted: Vec<&str> = files.iter()
+///         .filter_map(|f| extract_name(f))
+///         .collect();
+///     println!("{:?}", extracted);
+/// }
+/// ["9ba626afa44a3aa3", "346d785d6ca13ff4", "18235e0c9ec0e636"]
+fn extract_name(file_name: &str) -> &str {
+    if let Some((name, suffix)) = file_name.split_once(".patch_") {
+        if suffix.chars().all(|c| c.is_numeric()) {
+            return name;
+        }
+    }
+    ""
+}
+
+// fn extract_name_regex(file_name: &str) -> Option<String> {
+//     let re = Regex::new(r"^([a-f0-9]+)\.patch_\d+$").unwrap();
+//     re.captures(file_name).map(|cap| cap[1].to_string())
+// }

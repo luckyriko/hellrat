@@ -1,6 +1,6 @@
 [package]
 name = "helldivers2-mods-manager"
-version = "0.1.0"
+version = "1.0.0"
 description = "a helldiver2 mods manager app"
 authors = ["luckyriko"]
 edition = "2021"

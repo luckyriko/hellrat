@@ -28,26 +28,21 @@ pub fn db_operate_test() {
 
 }
 
-/// 删除单个mod安装文件
-#[tauri::command]
-pub fn one_mod_delete(record_id: i64) -> Result<(), String> {
+pub fn check_mod_activate(record_id: i64) -> Result<(), String> {
     let conn = open_data_db().map_err(|e| format!("数据库连接失败: {}", e))?;
 
     let mut stmt = conn
         .prepare("SELECT activate FROM mods_records WHERE id = ?1")
-        .map_err(|e| format!("数据库创建查询失败: {}", e))?;
+        .map_err(|e| format!("删除时查询安装状态失败: {}", e))?;
     let activate: i64 = stmt.query_row(params![record_id], |row| row.get(0))
-        .map_err(|e| format!("数据查询失败: {}", e))?;
+        .map_err(|e| format!("删除时查询安装状态失败: {}", e))?;
 
     println!("activate:{}", activate);
     if activate == 1 {
         return Err("该mod正在使用，请先卸载后再删除".to_string());
     }
-
-    del_one_mod_record(&conn, record_id).map_err(|e| format!("删除mod存档失败: {}", e))?;
-    
-
     Ok(())
+
 }
 
 /// 查询mod安装的文件名
@@ -69,7 +64,7 @@ pub fn get_mod_install_files(record_id: i64) -> Result<Vec<String>, String> {
 
 /// 查询mod存档
 #[tauri::command]
-pub fn get_mod_records(mode_type: String, search: String) -> Result<Vec<GameMod>, String> {
+pub fn get_mod_records(mode_type: &str, search: &str) -> Result<Vec<GameMod>, String> {
     let conn = open_data_db().map_err(|e| format!("数据库连接失败: {}", e))?;
 
     let mut sql = String::from("SELECT * FROM mods_records WHERE mod_type = ?1 ORDER BY id DESC");
@@ -106,13 +101,13 @@ pub fn get_mod_records(mode_type: String, search: String) -> Result<Vec<GameMod>
 }
 
 /// 获取所有安装文件
-pub fn get_all_mods_install_files() -> Result<Vec<String>> {
+pub fn get_all_mods_install_files(mod_type :&str) -> Result<Vec<String>> {
     let conn = open_data_db().context("数据库连接失败")?;
 
     let mut stmt = conn
-        .prepare("SELECT file FROM mods_install_files").context("创建查询失败")?;
+        .prepare("SELECT file FROM mods_install_files AS files LEFT JOIN mods_records AS record ON files.record_id = record.id WHERE record.mod_type = ?1").context("创建查询失败")?;
     let files_iter = stmt
-        .query_map([], |row| Ok(row.get::<_, String>(0)?)).context("查询失败")?;
+        .query_map([mod_type], |row| Ok(row.get::<_, String>(0)?)).context("查询失败")?;
 
     let files = files_iter.filter_map(Result::ok).collect();
 
@@ -142,8 +137,10 @@ fn add_mod_record(conn: &Connection, game_mod: &GameModData) -> Result<i64> {
     Ok(last_record_id)
 }
 
-/// 删除一个mod存档
-fn del_one_mod_record(conn: &Connection, record_id: i64) -> Result<()> {
+/// 从数据库删除一个mod存档
+pub fn del_one_mod_record(record_id: i64) -> Result<()> {
+    let conn = open_data_db()?;
+
     conn.execute(
         "DELETE FROM mods_records WHERE id = ?1",
         params![record_id]
@@ -159,16 +156,16 @@ fn del_one_mod_record(conn: &Connection, record_id: i64) -> Result<()> {
 
 
 /// 一键卸载：删除所有mods_install_files安装记录，mods_records所有activate置为0
-pub fn uninstall_all_mod() -> Result<()> {
+pub fn uninstall_all_mod(mod_type :&str) -> Result<()> {
     let mut conn = open_data_db()?;
     let tx = conn.transaction()?;
 
     tx.execute(
-        "UPDATE mods_records SET activate = 0",()
+        "UPDATE mods_records SET activate = 0 WHERE mod_type = ?1 ", params![mod_type]
     )?;
 
     tx.execute(
-        "DELETE FROM mods_install_files",()
+        "DELETE FROM mods_install_files WHERE record_id IN ( SELECT id FROM mods_records WHERE mod_type = ?1)", params![mod_type]
     )?;
     tx.commit()?;
     Ok(())

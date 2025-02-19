@@ -235,7 +235,7 @@ async function openDir(path) {
     return;
   }
   try {
-    await invoke('open_win_folder', { path });
+    await invoke('open_folder', { path });
   } catch (error) {
     console.error('Failed to open folder:', error);
   }
@@ -274,11 +274,14 @@ const onSubmit = async (formEl) => {
         console.log('---从下载目录移动到游戏data目录并自动重命名排序---', {
           down_dir, record_dir, data_dir, mod_info
         });
+
+        for(let i =0;i<200;i++ ){
         await invoke('down_copy_and_rename_files', { down_dir, record_dir, data_dir, mod_info });
+      }
         console.log('down_copy_and_rename_files successfully!');
 
         ElMessage({
-          message: '安装成功',
+          message: buttonText.value+'成功',
           type: 'success',
         })
         // 重置表单
@@ -286,7 +289,7 @@ const onSubmit = async (formEl) => {
 
       } catch (error) {
         console.error('Failed to submit:', error);
-        ElMessage.error(String(error) || '添加失败')
+        ElMessage.error(String(error) || '提交失败')
 
       } finally {
 
