@@ -8,6 +8,7 @@ use std::fs;
 pub struct GameMod {
     pub id: Option<i64>,
     pub name: String,
+    pub memo: String,
     pub mod_type: String,
     pub activate: bool,
     pub author: String,
@@ -42,6 +43,27 @@ pub fn check_mod_activate(record_id: i64) -> Result<(), String> {
         return Err("该mod正在使用，请先卸载后再删除".to_string());
     }
     Ok(())
+
+}
+
+#[tauri::command]
+pub fn check_mod_name(name: &str) -> Result<bool, String> {
+    let conn = open_data_db().map_err(|e| format!("数据库连接失败: {}", e))?;
+
+    let mut stmt = conn
+        .prepare("SELECT COUNT(*) as count FROM mods_records WHERE name = ?1")
+        .map_err(|e| format!("查询是否有重复名称失败: {}", e))?;
+    let count: i32 = stmt.query_row(params![name], |row| row.get(0))
+        .map_err(|e| format!("查询是否有重复名称失败: {}", e))?;
+
+    // println!("count:{}", count);
+    if count == 0 {
+        Ok(true)
+        
+    }else {
+        Ok(false)
+        
+    }
 
 }
 
@@ -85,12 +107,13 @@ pub fn get_mod_records(mode_type: &str, search: &str) -> Result<Vec<GameMod>, St
             Ok(GameMod {
                 id: row.get(0).ok(),
                 name: row.get(1)?,
-                mod_type: row.get(2)?,
-                activate: row.get(3)?,
-                author: row.get(4)?,
-                link: row.get(5)?,
-                desc: row.get(6)?,
-                preview: row.get(7)?,
+                memo: row.get(2)?,
+                mod_type: row.get(3)?,
+                activate: row.get(4)?,
+                author: row.get(5)?,
+                link: row.get(6)?,
+                desc: row.get(7)?,
+                preview: row.get(8)?,
             })
         })
         .map_err(|e| format!("数据查询失败: {}", e))?;
@@ -114,9 +137,9 @@ pub fn get_all_mods_install_files(mod_type :&str) -> Result<Vec<String>> {
     Ok(files)
 }
 
-/// 更新mod存档
-fn update_mod_record(conn: &Connection, game_mod: &GameModData) -> Result<i64> {
-    let id = game_mod.info.id.unwrap();
+/// 更新mod存档安装状态
+fn update_mod_record_activate(conn: &Connection, game_mod: &GameModData) -> Result<i64> {
+    let id = game_mod.info.id.unwrap_or(0);
     conn.execute(
         "UPDATE mods_records SET activate = ?1 WHERE id = ?2",
         (u8::from(*(&game_mod.info.activate)), &id),
@@ -125,11 +148,23 @@ fn update_mod_record(conn: &Connection, game_mod: &GameModData) -> Result<i64> {
     Ok(id)
 }
 
+/// 更新mod存档信息
+pub fn update_mod_record_info(game_mod: &GameMod) -> Result<()> {
+    let conn = open_data_db()?;
+    let id = game_mod.id.unwrap_or(0);
+    conn.execute(
+        "UPDATE mods_records SET memo = ?1,mod_type = ?2,author = ?3,link = ?4,desc = ?5,preview = ?6 WHERE id = ?7",
+        (&game_mod.memo, &game_mod.mod_type, &game_mod.author, &game_mod.link, &game_mod.desc, &game_mod.preview, &id),
+    )?;
+
+    Ok(())
+}
+
 /// 添加mod存档
 fn add_mod_record(conn: &Connection, game_mod: &GameModData) -> Result<i64> {
     conn.execute(
-        "INSERT INTO mods_records (name, mod_type, activate, author, link, desc, preview) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
-        (&game_mod.info.name, &game_mod.info.mod_type, u8::from(*(&game_mod.info.activate)) , &game_mod.info.author, &game_mod.info.link, &game_mod.info.desc, &game_mod.info.preview),
+        "INSERT INTO mods_records (name, memo, mod_type, activate, author, link, desc, preview) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
+        (&game_mod.info.name, &game_mod.info.name, &game_mod.info.mod_type, u8::from(*(&game_mod.info.activate)) , &game_mod.info.author, &game_mod.info.link, &game_mod.info.desc, &game_mod.info.preview),
     )?;
     let last_record_id = conn.last_insert_rowid();
     // println!("last_record_id: {last_record_id}");
@@ -189,7 +224,7 @@ pub fn update_mod(game_mod: GameModData) -> Result<()> {
     let tx = conn.transaction()?;
 
     // 存档记录
-    let record_id = update_mod_record(&tx, &game_mod)?; // tx causes rollback if this fails
+    let record_id = update_mod_record_activate(&tx, &game_mod)?; // tx causes rollback if this fails
 
     // 安装记录
     if game_mod.info.activate {
@@ -226,6 +261,7 @@ pub fn create_db_table_if_not_exists() -> Result<()> {
         "CREATE TABLE IF NOT EXISTS mods_records (
             id          INTEGER PRIMARY KEY AUTOINCREMENT,
             name        TEXT NOT NULL,
+            memo        TEXT NOT NULL,
             mod_type    TEXT NOT NULL,
             activate    INTEGER NOT NULL,
             author      TEXT,

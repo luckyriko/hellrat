@@ -15,75 +15,78 @@
         <el-col :span="24">
           <div class="desc">3. 无需删除游戏data目录里之前添加过的mod；删除mod需手动去游戏data目录中删除；</div>
         </el-col>
-        <el-col :span="24">
-          <div class="desc">4. 目前没有记录mod是否已经被安装过了，请勿重复安装同一个mod；</div>
-        </el-col>
-        <el-col :span="24">
-          <div class="desc">5. 示例：使用时请选择"亚里亚玫红痛车"这个mod目录，不支持嵌套目录读取，文件结构如下：</div>
-        </el-col>
+    
       </el-row> -->
 
       <el-tree style="max-width: 600px; color: red; margin-bottom: 20px;" :data="data" :props="defaultProps"
         @node-click="handleNodeClick" />
 
-      <el-form ref="formRef" :model="form" label-width="100px" style="max-width: 700px" :rules="rules">
-        <el-form-item label="Mod目录" prop="directory">
-          <el-col :span="17">
-            <el-input v-model.trim="form.directory" />
-          </el-col>
-          <el-col :span="2" :offset="1">
-            <el-button type="primary" @click="onSelect">选择</el-button>
-          </el-col>
-          <el-col :span="2" :offset="1">
-            <el-button type="primary" @click="openDir(form.directory)">打开</el-button>
-          </el-col>
-        </el-form-item>
+      <el-row>
+        <el-col :span="18">
+          <el-form ref="formRef" :model="form" label-width="100px" style="max-width: 700px" :rules="rules">
+            <el-form-item label="Mod目录" prop="directory">
+              <el-col :span="17">
+                <el-input v-model.trim="form.directory" />
+              </el-col>
+              <el-col :span="2" :offset="1">
+                <el-button type="primary" @click="onSelect">选择</el-button>
+              </el-col>
+              <el-col :span="2" :offset="1">
+                <el-button type="primary" @click="openDir(form.directory)">打开</el-button>
+              </el-col>
+            </el-form-item>
 
-        <el-form-item label="名称" prop="name">
-          <el-input v-model.trim="form.name" />
-        </el-form-item>
+            <el-form-item label="名称" prop="name">
+              <el-input v-model.trim="form.name" />
+            </el-form-item>
 
-        <el-form-item label="类型" prop="mod_type">
-          <el-radio-group v-model="form.mod_type">
-            <el-radio value="model">模型</el-radio>
-            <el-radio value="voice">音频</el-radio>
-          </el-radio-group>
-        </el-form-item>
+            <el-form-item label="类型" prop="mod_type">
+              <el-radio-group v-model="form.mod_type">
+                <el-radio value="model">模型</el-radio>
+                <el-radio value="voice">音频</el-radio>
+              </el-radio-group>
+            </el-form-item>
 
-        <el-form-item label="安装" prop="activate">
-          <el-switch v-model="form.activate" />
-        </el-form-item>
+            <el-form-item label="安装" prop="activate">
+              <el-switch v-model="form.activate" />
+            </el-form-item>
 
-        <el-form-item label="预览图" prop="preview">
-          <div v-if="previewImg" class="image" @click="selectPreViewImg">
-            <el-image style="height: 150px" :src="previewImg" fit="fill" />
-            <el-icon class="close-icon" size="30" color="red"
-              @click.stop="removeImg"><i-ep-circle-close-filled /></el-icon>
-          </div>
-          <div v-else class="image" @click="selectPreViewImg">
-            <el-icon size="20" color="#666"><i-ep-plus /></el-icon>
-          </div>
-          <el-input v-model.trim="form.preview" type="hidden" />
+            <el-form-item label="预览图" prop="preview">
+              <div v-if="previewImg" class="image" @click="selectPreViewImg">
+                <el-image style="height: 150px" :src="previewImg" fit="fill" />
+                <el-icon class="close-icon" size="30" color="red"
+                  @click.stop="removeImg"><i-ep-circle-close-filled /></el-icon>
+              </div>
+              <div v-else class="image" @click="selectPreViewImg">
+                <el-icon size="20" color="#666"><i-ep-plus /></el-icon>
+              </div>
+              <el-input v-model.trim="form.preview" type="hidden" />
 
-        </el-form-item>
+            </el-form-item>
 
-        <el-form-item label="作者" prop="author">
-          <el-input v-model.trim="form.author" />
-        </el-form-item>
+            <el-form-item label="作者" prop="author">
+              <el-input v-model.trim="form.author" />
+            </el-form-item>
 
-        <el-form-item label="链接" prop="link">
-          <el-input v-model.trim="form.link" />
-        </el-form-item>
+            <el-form-item label="链接" prop="link">
+              <el-input v-model.trim="form.link" />
+            </el-form-item>
 
-        <el-form-item label="详情" prop="desc">
-          <el-input v-model="form.desc" type="textarea" />
-        </el-form-item>
+            <el-form-item label="详情" prop="desc">
+              <el-input v-model="form.desc" type="textarea" />
+            </el-form-item>
 
-        <el-form-item>
-          <el-button type="primary" :loading="loadingFlag" @click="onSubmit(formRef)">{{ buttonText }}</el-button>
-          <el-button @click="resetForm(formRef)">重置</el-button>
-        </el-form-item>
-      </el-form>
+            <el-form-item>
+              <el-button type="primary" :loading="loadingFlag" @click="onSubmit(formRef)">{{ buttonText }}</el-button>
+              <el-button @click="resetForm(formRef)">重置</el-button>
+            </el-form-item>
+          </el-form>
+        </el-col>
+        <el-col :span="6" style="padding-left: 10px;">
+          <div class="detail" v-show="modFiles && modFiles.length > 0">目录预览</div>
+          <p style="font-size: 10px;" v-for="(item, index) in modFiles" :key="index">{{ item }}</p>
+        </el-col>
+      </el-row>
     </div>
   </el-scrollbar>
 
@@ -95,7 +98,7 @@ import { ref, reactive, onMounted, toRaw, computed } from 'vue'
 import { open } from '@tauri-apps/plugin-dialog';
 import { invoke, convertFileSrc } from '@tauri-apps/api/core';
 import { readTextFile, BaseDirectory } from '@tauri-apps/plugin-fs';
-import { join } from '@tauri-apps/api/path';
+import { join, basename } from '@tauri-apps/api/path';
 
 const loadingFlag = ref(false);
 const modsDir = ref("");
@@ -140,7 +143,7 @@ const handleNodeClick = (data) => {
 
 const data = [
   {
-    label: '亚里亚玫红痛车(Mod目录)',
+    label: 'Mod目录示例，不支持嵌套目录，点开查看详情',
     children: [
       {
         label: '9ba626afa44a3aa3.patch_233',
@@ -205,6 +208,8 @@ const removeImg = () => {
   form.preview = '';
 }
 
+const modFiles = ref([]);
+
 const onSelect = async () => {
   const selectedPath = await open({
     multiple: false,
@@ -214,14 +219,18 @@ const onSelect = async () => {
 
 
   if (selectedPath) {
-    const currentPlatform = platform();
-    const lastPart = currentPlatform === 'windows' ? selectedPath.split("\\").pop() : selectedPath.split("/").pop();
+    // const currentPlatform = platform();
+    const lastSegment = await basename(selectedPath);
     form.directory = selectedPath;
-    form.name = lastPart;
+    form.name = lastSegment;
 
     try {
-      const firstImagePath = await invoke("get_folder_first_image", { folderPath: selectedPath });
-      form.preview = firstImagePath;
+      const modInfo = await invoke("get_mod_info", { folderPath: selectedPath });
+      console.log('---modInfo---', modInfo);
+      form.preview = modInfo.first_image_path;
+      form.mod_type = modInfo.mod_type;
+      modFiles.value = modInfo.files;
+
     } catch (error) {
       console.error("Error:", error);
     }
@@ -241,13 +250,35 @@ async function openDir(path) {
   }
 }
 
+const checkName = async (rule, value, callback) => {
+  if (!value) {
+    return callback(new Error('请输入mod名称'))
+  }
+  try {
+    let flag = await invoke('check_mod_name', { name: value });
+    if (flag) {
+      callback()
+    } else {
+      callback(new Error('Mod名称重复，请重新命名！'))
+    }
+  } catch (error) {
+    console.error('Failed to check name:', error);
+    callback()
+
+  }
+
+}
+
+
 const rules = reactive({
   name: [
-    { required: true, message: '请输入mod名称', trigger: ['blur', 'change'] },
-    { min: 1, max: 255, message: '最少1个字符，最长255个字符', trigger: ['blur', 'change'] },
+    { required: true, validator: checkName, trigger: ['blur', 'change'] }
   ],
   directory: [
     { required: true, message: '请选择mod目录', trigger: ['blur', 'change'] },
+  ],
+  mod_type: [
+    { required: true, message: '请选择mod类型', trigger: ['blur', 'change'] },
   ]
 })
 
@@ -260,10 +291,8 @@ const onSubmit = async (formEl) => {
   if (!formEl) return;
   await formEl.validate(async (valid, fields) => {
     if (valid) {
-
       loadingFlag.value = true;
 
-      console.log(666666666);
       try {
         // 从下载目录copy到存档目录
         // 如果安装 从下载目录copy到游戏data目录并自动重命名排序
@@ -271,17 +300,16 @@ const onSubmit = async (formEl) => {
         let record_dir = await join(modsDir.value, form.name);
         let data_dir = gameDataDir.value;
         let mod_info = toRaw(form);
-        console.log('---从下载目录移动到游戏data目录并自动重命名排序---', {
-          down_dir, record_dir, data_dir, mod_info
-        });
+        mod_info.memo = mod_info.name;
+        // console.log('---从下载目录移动到游戏data目录并自动重命名排序---', {
+        //   down_dir, record_dir, data_dir, mod_info
+        // });
 
-        for(let i =0;i<200;i++ ){
         await invoke('down_copy_and_rename_files', { down_dir, record_dir, data_dir, mod_info });
-      }
         console.log('down_copy_and_rename_files successfully!');
 
         ElMessage({
-          message: buttonText.value+'成功',
+          message: buttonText.value + '成功',
           type: 'success',
         })
         // 重置表单
@@ -304,20 +332,26 @@ const onSubmit = async (formEl) => {
 const resetForm = (formEl) => {
   if (!formEl) return
   formEl.resetFields();
-  console.log('---form.preview---', form);
 }
 
 </script>
 
 <style scoped lang="scss">
 .container {
-  padding: 30px;
+  padding: 30px 10px;
 }
 
 .title {
   font-size: 20px;
   font-weight: bold;
   margin-bottom: 10px;
+}
+
+.detail {
+  font-size: 16px;
+  font-weight: bold;
+  margin-bottom: 10px;
+  color: #333;
 }
 
 .desc {

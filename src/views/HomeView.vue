@@ -40,25 +40,27 @@
         </template>
       </el-table-column>
       <el-table-column prop="id" label="ID" sortable min-width="55" align="center" />
-      <el-table-column prop="name" label="名称" min-width="220">
+      <el-table-column label="名称" min-width="220">
         <template #default="scope">
           <div style="display: flex; flex-direction: row; align-items: center;">
             <div v-if="scope.row.link ? true : false">
-              <el-link :underline="true" type="primary" @click="openBrowser(scope.row.link)">{{ scope.row.name
+              <el-link :underline="true" type="primary" @click="openBrowser(scope.row.link)">{{ scope.row.memo
               }}</el-link>
             </div>
             <div v-else>
-              {{ scope.row.name }}
+              {{ scope.row.memo }}
             </div>
 
             <div v-if="scope.row.preview" style="display: flex; flex-direction: row; align-items: center;">
               <el-popover :width="500" placement="right"
                 popper-style="box-shadow: rgb(14 18 22 / 35%) 0px 10px 38px -10px, rgb(14 18 22 / 20%) 0px 10px 20px -15px; padding: 20px;">
+                <!-- 图片图标 -->
                 <template #reference>
                   <el-icon size="20" color="purple"><i-ep-picture-rounded /></el-icon>
                 </template>
+                <!-- 图片内容 -->
                 <template #default>
-                  <el-image style="width: 450px" :src="scope.row.preview" fit="fill" />
+                  <el-image style="width: 450px" :src="scope.row.previewPath" fit="fill" />
                 </template>
               </el-popover>
             </div>
@@ -99,10 +101,58 @@
       测试新增
     </el-button>
   </div>
+
+  <el-dialog v-model="dialogFormVisible" title="修改Mod信息" width="500" :close-on-click-modal="false">
+    <el-form ref="formRef" :model="form" :rules="rules">
+      <el-form-item label="名称" :label-width="formLabelWidth" prop="memo">
+        <el-input v-model="form.memo" autocomplete="off" />
+      </el-form-item>
+      <el-form-item label="类型" :label-width="formLabelWidth" prop="mod_type">
+        <!-- <el-select v-model="form.region" placeholder="请选择Mod类型">
+          <el-option label="模型" value="model" />
+          <el-option label="音频" value="voice" />
+        </el-select> -->
+        <el-radio-group v-model="form.mod_type">
+          <el-radio value="model">模型</el-radio>
+          <el-radio value="voice">音频</el-radio>
+        </el-radio-group>
+      </el-form-item>
+      <el-form-item label="预览图" :label-width="formLabelWidth" prop="preview">
+        <div v-if="form.previewPath" class="image" @click="selectPreViewImg">
+          <el-image style="height: 150px" :src="form.previewPath" fit="fill" />
+          <el-icon class="close-icon" size="30" color="red"
+            @click.stop="removeImg"><i-ep-circle-close-filled /></el-icon>
+        </div>
+        <div v-else class="image" @click="selectPreViewImg">
+          <el-icon size="20" color="#666"><i-ep-plus /></el-icon>
+        </div>
+        <el-input v-model.trim="form.preview" type="hidden" />
+      </el-form-item>
+      <el-form-item label="作者" :label-width="formLabelWidth" prop="author">
+        <el-input v-model="form.author" autocomplete="off" />
+      </el-form-item>
+      <el-form-item label="链接" :label-width="formLabelWidth" prop="link">
+        <el-input v-model="form.link" autocomplete="off" />
+      </el-form-item>
+      <el-form-item label="详情" :label-width="formLabelWidth" prop="desc">
+        <el-input v-model="form.desc" autocomplete="off" type="textarea" />
+      </el-form-item>
+    </el-form>
+    <template #footer>
+      <div class="dialog-footer">
+        <el-button @click="dialogFormVisible = false">取消</el-button>
+        <el-button @click="resetForm(formRef)">重置</el-button>
+        <el-button type="primary" :loading="loadingFlag" @click="onSubmit(formRef)">
+          确认
+        </el-button>
+      </div>
+    </template>
+  </el-dialog>
 </template>
 <script setup>
 import { ref, reactive, onMounted, toRaw, computed } from 'vue'
-import { open } from '@tauri-apps/plugin-shell';
+import { open as openShell } from '@tauri-apps/plugin-shell';
+import { open as openDialog } from '@tauri-apps/plugin-dialog';
 import { invoke, convertFileSrc } from '@tauri-apps/api/core';
 import { exists, mkdir, create, readTextFile, writeTextFile, BaseDirectory } from '@tauri-apps/plugin-fs';
 import { join } from '@tauri-apps/api/path';
@@ -110,8 +160,108 @@ import { join } from '@tauri-apps/api/path';
 const current = ref('模型');
 const options = ['模型', '音频'];
 
+// 编辑弹窗
+const formRef = ref();
+const dialogFormVisible = ref(false)
+const formLabelWidth = '80px'
+const form = reactive({
+  memo: '',
+  directory: '',
+  author: '',
+  link: '',
+  mod_type: '',
+  desc: '',
+  preview: '',
+  previewPath: ''
+});
+const loadingFlag = ref(false);
+
+const selectPreViewImg = async () => {
+  const selectedPath = await openDialog({
+    multiple: false,
+    directory: false,
+    title: "请选择预览图",
+  });
+
+
+  if (selectedPath) {
+    form.preview = selectedPath;
+    form.previewPath = convertFileSrc(selectedPath);
+  }
+
+};
+const removeImg = () => {
+  form.preview = '';
+  form.previewPath = '';
+};
+
+const rules = reactive({
+  memo: [
+    { required: true, min: 1, max: 255, message: '最少1个字符，最长255个字符', trigger: ['blur', 'change'] }
+  ],
+  mod_type: [
+    { required: true, message: '请选择mod类型', trigger: ['blur', 'change'] },
+  ]
+})
+
+const handleEdit = (index, row) => {
+  console.log(index, row);
+  if (row) {
+    Object.assign(form, row);
+    dialogFormVisible.value = true;
+  }
+}
+
+
+const onSubmit = async (formEl) => {
+  if (!gameDataDir.value || !modsDir.value) {
+    ElMessage.error('请先去设置里添加游戏data目录和mod存档目录');
+    return;
+  }
+
+  if (!formEl) return;
+  await formEl.validate(async (valid, fields) => {
+    if (valid) {
+      loadingFlag.value = true;
+
+      try {
+        let mod = modsData.value.find(x=>x.id == form.id);
+        let up_img_flag = true;
+        if(mod.preview == form.preview){
+          console.log('图片无需更新');
+          up_img_flag = false;
+        }
+        
+        await invoke('up_mod_info', { mod_info: form, record_dir: modsDir.value, up_img_flag });
+        console.log('up_mod_info successfully!');
+        await getModsList();
+        dialogFormVisible.value = false;
+        ElMessage({
+          message: '修改成功',
+          type: 'success',
+        })
+
+      } catch (error) {
+        console.error('Failed to submit:', error);
+        ElMessage.error(String(error) || '修改失败')
+
+      } finally {
+
+        loadingFlag.value = false;
+      }
+    } else {
+      console.log('error submit!', fields)
+    }
+  })
+}
+
+const resetForm = (formEl) => {
+  if (!formEl) return
+  formEl.resetFields();
+}
+
 // 搜索
-const search = ref('')
+const search = ref('');
 
 // 存档列表
 const modsData = ref([]);
@@ -231,7 +381,7 @@ const activateChange = async (row) => {
 
 // 跳转到默认浏览器打开链接
 const openBrowser = async (url) => {
-  await open(url);
+  await openShell(url);
 
 }
 
@@ -304,35 +454,54 @@ const uninstallAllMods = async () => {
 // 删除mod存档
 const deleteMod = async (index, row) => {
   if (Number(row.activate) === 1) {
-    ElMessage.error('请先卸载mod后再进行删除');
+    ElMessage.error('该mod正在使用，请先卸载后再删除');
     return
   }
   if (!modsDir.value) {
     ElMessage.error('未获取到mod存档目录');
     return
   }
-  const loading = ElLoading.service({
-    lock: true,
-    text: '删除中...',
-    background: 'rgba(0, 0, 0, 0.7)',
-  })
 
-  try {
-    let dir_path = await join(modsDir.value, row.name);
-    await invoke("remove_dir_all", { dir_path, record_id: row.id });
-    modsData.value.splice(index, 1);
-    ElMessage({
-      message: '删除成功',
-      type: 'success'
+  ElMessageBox.confirm(
+    '此操作将永久删除该Mod存档，确定继续吗？',
+    '提示',
+    {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'warning',
+    }
+  )
+    .then(async () => {
+
+      const loading = ElLoading.service({
+        lock: true,
+        text: '删除中...',
+        background: 'rgba(0, 0, 0, 0.7)',
+      })
+
+      try {
+        let dir_path = await join(modsDir.value, row.name);
+        await invoke("remove_dir_all", { dir_path, record_id: row.id });
+        modsData.value.splice(index, 1);
+        ElMessage({
+          message: '删除成功',
+          type: 'success'
+        })
+      } catch (error) {
+        console.error("Error delete mod:", error);
+        ElMessage.error('删除失败：' + String(error))
+
+      } finally {
+        loading.close();
+
+      }
     })
-  } catch (error) {
-    console.error("Error delete mod:", error);
-    ElMessage.error('删除失败：' + String(error))
-
-  } finally {
-    loading.close();
-
-  }
+    .catch(() => {
+      ElMessage({
+        type: 'info',
+        message: '已取消',
+      })
+    })
 }
 
 // 清除过滤条件
@@ -365,7 +534,10 @@ async function getModsList(name = '') {
     let modeType = current.value == '模型' ? 'model' : 'voice';
     let mods = await invoke("get_mod_records", { search: name, modeType });
     mods.forEach(async element => {
-      element.preview = await previewImg(element);
+      let {preview, assetUrl} = await previewImg(element);
+      element.preview = preview;
+      element.previewPath = assetUrl;
+
     });
 
     modsData.value = mods;
@@ -401,11 +573,6 @@ async function getModDetail(row) {
 
 }
 
-
-const handleEdit = (index, row) => {
-  console.log(index, row)
-}
-
 // 测试添加
 const onAddItem = () => {
   const maxId = modsData.value.reduce((max, current) => {
@@ -431,9 +598,15 @@ const previewImg = async (row) => {
 
     // console.log('---imgPath---', assetUrl);
 
-    return assetUrl
+    return {
+      assetUrl,
+      preview: imgPath
+    }
   } else {
-    return '';
+    return {
+      assetUrl: '',
+      preview: ''
+    };
   }
 };
 
@@ -449,5 +622,20 @@ const previewImg = async (row) => {
   font-size: 20px;
   font-weight: bold;
   margin-bottom: 10px;
+}
+
+.image {
+  min-width: 150px;
+  height: 150px;
+  line-height: 150px;
+  text-align: center;
+  border: dashed 1px #999;
+  position: relative;
+
+  .close-icon {
+    position: absolute;
+    right: -10px;
+    top: -10px;
+  }
 }
 </style>

@@ -20,14 +20,27 @@ pub fn select_one_folder(app: AppHandle) {
     }
 }
 
-/// 获取指定目录的第一个图片路径
+#[derive(Serialize, Deserialize, Debug)]
+pub struct ModInfo {
+    first_image_path: String,
+    mod_type: String,
+    files: Vec<String>,
+}
+
+/// 获取指定mod目录的下的文件列表、第一个图片地址、自动判断mod类型
 #[tauri::command]
-pub fn get_folder_first_image(folder_path: String) -> Result<String, String> {
+pub fn get_mod_info(folder_path: String) -> Result<ModInfo, String> {
     let path = PathBuf::from(&folder_path);
 
     if !path.is_dir() {
         return Err(format!("{} 不是一个有效的文件夹路径", folder_path));
     }
+
+    let mut mod_info = ModInfo {
+        first_image_path: String::from(""),
+        mod_type: String::from("voice"),
+        files: vec![],
+    };
 
     let images_ext = ["jpg", "jpeg", "png", "gif", "bmp", "webp"]; // 支持的图片格式
 
@@ -36,14 +49,69 @@ pub fn get_folder_first_image(folder_path: String) -> Result<String, String> {
     for entry in entries.flatten() {
         let file_path = entry.path();
 
+        let file_path_string = file_path.to_string_lossy().into_owned();
+
+        // 判断类型
+        if file_path_string.contains("9ba626afa44a3aa3") {
+            mod_info.mod_type = "model".to_string();
+        }
+
+        // 目录下有哪些文件
+        mod_info.files.push(
+            file_path
+                .file_name()
+                .map(|s| s.to_string_lossy().into_owned())
+                .unwrap_or_else(|| "unknown".to_string()),
+        );
+
+        // 获取第一张图片
         if let Some(ext) = file_path.extension().and_then(|s| s.to_str()) {
-            if images_ext.contains(&ext.to_lowercase().as_str()) {
-                return Ok(file_path.to_string_lossy().to_string());
+            if images_ext.contains(&ext.to_lowercase().as_str())
+                && mod_info.first_image_path.is_empty()
+            {
+                mod_info.first_image_path = file_path.to_string_lossy().into_owned();
             }
         }
     }
 
-    Err("未找到任何图片文件".to_string())
+    Ok(mod_info)
+}
+
+#[tauri::command(rename_all = "snake_case")]
+pub fn up_mod_info(
+    mut mod_info: db::GameMod,
+    record_dir: &str,
+    up_img_flag: bool,
+) -> Result<(), String> {
+    let record_path = Path::new(record_dir);
+
+    // 检查存档文件夹是否存在
+    if !record_path.is_dir() {
+        return Err(format!("mod目录 '{}' 不存在", record_dir));
+    }
+
+    let target_dir = record_path.join(&mod_info.name);
+
+    // 检查mod文件夹是否存在
+    if !target_dir.is_dir() {
+        return Err(format!("mod目录 '{}' 不存在", target_dir.display()));
+    }
+
+    let preview_file = &mod_info.preview;
+
+    // 添加预览图片
+    if up_img_flag {
+        mod_info.preview = copy_preview_img(preview_file, &target_dir)?;
+    }else{
+        mod_info.preview = Path::new(preview_file)
+        .file_name() // 获取路径最后一部分
+        .map(|s| s.to_string_lossy().into_owned()) // 转换为 String
+        .unwrap_or_else(|| "".to_string());
+    }
+
+    // 更新
+    db::update_mod_record_info(&mod_info).map_err(|e| format!("更新失败: {}", e))?;
+    Ok(())
 }
 
 /// 使用系统文件管理器打开文件夹
@@ -119,6 +187,14 @@ pub fn copy_files_to_record(
     }
 
     // 在mod文件夹里放入预览图片并改名为preview
+    let preview_img = copy_preview_img(preview_file, target_path)?;
+
+    Ok(preview_img)
+}
+
+fn copy_preview_img(preview_file: &str, target_path: &Path) -> Result<String, String> {
+    // 预览图片和要copy的图片是同一个路径，copy时会提示文件占用；
+    // 解决方案：如果要copy的文件已经在存档目录里了，则无需copy，直接返回图片名；
     if !preview_file.is_empty() {
         let preview_path = Path::new(preview_file);
         if preview_path.is_file() {
@@ -178,9 +254,8 @@ pub fn down_copy_and_rename_files(
 
         if mod_info.mod_type == "model" {
             processed_files = copy_and_rename_mod_files(src_path, data_path)?;
-        }else{
+        } else {
             processed_files = copy_and_rename_voice_files(src_path, data_path)?;
-
         }
     }
 
@@ -200,10 +275,8 @@ pub fn down_copy_and_rename_files(
 /// 根据id删除某个存档，前提是已禁用
 #[tauri::command(rename_all = "snake_case")]
 pub fn remove_dir_all(dir_path: &str, record_id: i64) -> Result<(), String> {
-
     // 不存在直接删除数据库里的记录；存在的话先查询安装状态，没有安装的才能删除
     if Path::new(dir_path).exists() {
- 
         db::check_mod_activate(record_id)?;
         if fs::remove_dir_all(dir_path).is_ok() {
             db::del_one_mod_record(record_id).map_err(|e| format!("删除mod存档失败: {}", e))?;
@@ -213,7 +286,7 @@ pub fn remove_dir_all(dir_path: &str, record_id: i64) -> Result<(), String> {
             println!("该目录 {} 不存在或删除失败", dir_path);
             return Err("删除失败".to_string());
         }
-    }else{
+    } else {
         db::del_one_mod_record(record_id).map_err(|e| format!("删除mod存档失败: {}", e))?;
     }
     println!("该目录 {} 下的文件已删除", dir_path);
@@ -279,7 +352,7 @@ pub fn deploy_mods(
         // 查找id相同的元素，并更新activate值
         if let Some(element) = mod_activate_data
             .iter_mut()
-            .find(|kk| kk.id == item.id.unwrap())
+            .find(|kk| kk.id == item.id.unwrap_or(0))
         {
             item.activate = element.activate;
         }
