@@ -7,10 +7,10 @@
     </el-row>
 
     <el-row :gutter="20">
-      <el-col :span="3">
+      <el-col :span="4">
         <el-segmented v-model="current" :options="options" size="default" @change="searchMod" />
       </el-col>
-      <el-col :span="9">
+      <el-col :span="8">
         <el-input v-model="search" placeholder="请输入名称" clearable>
           <template #append>
             <el-button @click="searchMod"><i-ep-search /></el-button>
@@ -21,11 +21,11 @@
       <el-col :span="3">
         <el-button @click="activeAllMods" type="success" plain>全部启用</el-button>
       </el-col>
-      <el-col :span="3" :offset="3">
-        <el-button @click="uninstallAllMods" type="danger" plain>一键卸载</el-button>
-      </el-col>
       <el-col :span="3">
         <el-button @click="deploy" type="primary" plain>应用安装</el-button>
+      </el-col>
+      <el-col :span="3" :offset="3">
+        <el-button @click="uninstallAllMods" type="danger" plain>一键卸载</el-button>
       </el-col>
     </el-row>
 
@@ -97,9 +97,45 @@
         </template>
       </el-table-column>
     </el-table>
-    <el-button class="mt-4" style="width: 100%" @click="onAddItem">
+    <!-- <el-button class="mt-4" style="width: 100%" @click="onAddItem">
       测试新增
-    </el-button>
+    </el-button> -->
+
+    <el-row style="margin-top: 10px;">
+      <el-col :span="6" style="text-align: center;">
+        <el-statistic title="总数量" :value="statistics.records_total_count" />
+      </el-col>
+      <el-col :span="6" style="text-align: center;">
+        <el-statistic :value="statistics.records_activate_count">
+          <template #title>
+            <div style="display: inline-flex; align-items: center">
+              使用状况
+            </div>
+          </template>
+          <template #suffix>/{{statistics.records_total_count}}</template>
+        </el-statistic>
+      </el-col>
+      <el-col :span="6" style="text-align: center;">
+        <el-statistic :value="statistics.model_activate_count">
+          <template #title>
+            <div style="display: inline-flex; align-items: center">
+              模型数量
+            </div>
+          </template>
+          <template #suffix>/{{statistics.model_total_count}}</template>
+        </el-statistic>
+      </el-col>
+      <el-col :span="6" style="text-align: center;">
+        <el-statistic :value="statistics.voice_activate_count">
+          <template #title>
+            <div style="display: inline-flex; align-items: center">
+              音频数量
+            </div>
+          </template>
+          <template #suffix>/{{statistics.voice_total_count}}</template>
+        </el-statistic>
+      </el-col>
+    </el-row>
   </div>
 
   <el-dialog v-model="dialogFormVisible" title="修改Mod信息" width="500" :close-on-click-modal="false">
@@ -114,7 +150,7 @@
         </el-select> -->
         <el-radio-group v-model="form.mod_type">
           <el-radio value="model">模型</el-radio>
-          <el-radio value="voice">音频</el-radio>
+          <el-radio value="voice">音频/杂项</el-radio>
         </el-radio-group>
       </el-form-item>
       <el-form-item label="预览图" :label-width="formLabelWidth" prop="preview">
@@ -158,7 +194,7 @@ import { exists, mkdir, create, readTextFile, writeTextFile, BaseDirectory } fro
 import { join } from '@tauri-apps/api/path';
 
 const current = ref('模型');
-const options = ['模型', '音频'];
+const options = ['模型', '音频/杂项'];
 
 // 编辑弹窗
 const formRef = ref();
@@ -225,13 +261,13 @@ const onSubmit = async (formEl) => {
       loadingFlag.value = true;
 
       try {
-        let mod = modsData.value.find(x=>x.id == form.id);
+        let mod = modsData.value.find(x => x.id == form.id);
         let up_img_flag = true;
-        if(mod.preview == form.preview){
+        if (mod.preview == form.preview) {
           console.log('图片无需更新');
           up_img_flag = false;
         }
-        
+
         await invoke('up_mod_info', { mod_info: form, record_dir: modsDir.value, up_img_flag });
         console.log('up_mod_info successfully!');
         await getModsList();
@@ -299,6 +335,27 @@ onMounted(async () => {
 
   await getModsList();
 });
+
+
+const statistics = reactive({
+  model_activate_count: 0,
+  model_total_count: 0,
+  records_activate_count: 0,
+  records_total_count: 0,
+  voice_activate_count: 0,
+  voice_total_count: 0
+});
+
+async function getStatistics() {
+  try {
+    const data = await invoke("get_statistics");
+    // console.log("统计数据:", data);
+    Object.assign(statistics, data);
+
+  } catch (error) {
+    console.error("获取统计数据失败", error);
+  }
+}
 
 async function activeAllMods() {
   modsData.value.forEach(element => {
@@ -482,7 +539,8 @@ const deleteMod = async (index, row) => {
       try {
         let dir_path = await join(modsDir.value, row.name);
         await invoke("remove_dir_all", { dir_path, record_id: row.id });
-        modsData.value.splice(index, 1);
+        // modsData.value.splice(index, 1);
+        getModsList();
         ElMessage({
           message: '删除成功',
           type: 'success'
@@ -516,7 +574,7 @@ const filterHandler = (value, row) => {
 }
 
 const type = (row, column) => {
-  return row.mod_type === 'model' ? '模型' : '音频';
+  return row.mod_type === 'model' ? '模型' : '音频/杂项';
 }
 
 // 获取mod存档
@@ -534,7 +592,7 @@ async function getModsList(name = '') {
     let modeType = current.value == '模型' ? 'model' : 'voice';
     let mods = await invoke("get_mod_records", { search: name, modeType });
     mods.forEach(async element => {
-      let {preview, assetUrl} = await previewImg(element);
+      let { preview, assetUrl } = await previewImg(element);
       element.preview = preview;
       element.previewPath = assetUrl;
 
@@ -553,6 +611,7 @@ async function getModsList(name = '') {
 
   } finally {
     loading.close();
+    getStatistics();
 
   }
 }
@@ -615,7 +674,7 @@ const previewImg = async (row) => {
 
 <style scoped lang="scss">
 .container {
-  padding: 30px;
+  padding: 20px 20px 0 20px;
 }
 
 .title {

@@ -14,10 +14,10 @@
         作者：理（luckyriko@qq.com）
       </el-col>
       <el-col :span="24" class="row">
-        捐赠：<el-link :underline="true" type="primary" @click="donate()">爱发电</el-link>
+        意见反馈：<el-link :underline="true" type="primary" @click="suggest()">bilibili</el-link>
       </el-col>
       <el-col :span="24" class="row">
-        意见反馈：<el-link :underline="true" type="primary" @click="suggest()">前往反馈</el-link>
+        版本发布&捐赠：<el-link :underline="true" type="primary" @click="donate()">爱发电</el-link>
       </el-col>
       <el-col :span="24" class="row">
         本软件免费，禁止商业用途。

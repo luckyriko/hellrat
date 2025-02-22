@@ -67,6 +67,48 @@ pub fn check_mod_name(name: &str) -> Result<bool, String> {
 
 }
 
+#[derive(Serialize)]
+pub struct Statistic {
+    records_activate_count: i32,
+    records_total_count: i32,
+    model_activate_count: i32,
+    model_total_count: i32,
+    voice_activate_count: i32,
+    voice_total_count: i32
+}
+
+#[tauri::command]
+pub fn get_statistics() -> Result<Statistic, String> {
+    let conn = open_data_db().map_err(|e| format!("数据库连接失败: {}", e))?;
+
+    let mut stmt = conn.prepare(
+        "SELECT 
+            (SELECT COUNT(*) FROM mods_records WHERE activate=1),
+            (SELECT COUNT(*) FROM mods_records),
+            (SELECT COUNT(*) FROM mods_records WHERE mod_type = 'model' AND activate=1),
+            (SELECT COUNT(*) FROM mods_records WHERE mod_type = 'model'),
+            (SELECT COUNT(*) FROM mods_records WHERE mod_type = 'voice' AND activate=1 ),
+            (SELECT COUNT(*) FROM mods_records WHERE mod_type = 'voice')
+            "
+    ).map_err(|e| format!("预编译统计SQL失败: {}", e))?;
+
+
+    let data = stmt.query_row([], |row| {
+        Ok(Statistic {
+            records_activate_count: row.get(0)?,
+            records_total_count: row.get(1)?,
+            model_activate_count: row.get(2)?,
+            model_total_count: row.get(3)?,
+            voice_activate_count: row.get(4)?,
+            voice_total_count: row.get(5)?,
+
+        })
+    }).map_err(|e| format!("统计失败: {}", e))?;
+
+    Ok(data)
+
+}
+
 /// 查询mod安装的文件名
 #[tauri::command]
 pub fn get_mod_install_files(record_id: i64) -> Result<Vec<String>, String> {
@@ -89,13 +131,13 @@ pub fn get_mod_install_files(record_id: i64) -> Result<Vec<String>, String> {
 pub fn get_mod_records(mode_type: &str, search: &str) -> Result<Vec<GameMod>, String> {
     let conn = open_data_db().map_err(|e| format!("数据库连接失败: {}", e))?;
 
-    let mut sql = String::from("SELECT * FROM mods_records WHERE mod_type = ?1 ORDER BY id DESC");
+    let mut sql = String::from("SELECT * FROM mods_records WHERE mod_type = ?1 ORDER BY id ASC");
     let mut params: Vec<&dyn ToSql> = Vec::new();
     params.push(&mode_type);
     let like_query = format!("%{}%", search);
 
     if !search.is_empty() {
-        sql = String::from("SELECT * FROM mods_records WHERE mod_type = ?1 AND name LIKE ?2 ORDER BY id DESC");
+        sql = String::from("SELECT * FROM mods_records WHERE mod_type = ?1 AND name LIKE ?2 ORDER BY id ASC");
         params.push(&like_query);
     }
 

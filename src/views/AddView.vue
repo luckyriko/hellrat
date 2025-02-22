@@ -43,7 +43,7 @@
             <el-form-item label="类型" prop="mod_type">
               <el-radio-group v-model="form.mod_type">
                 <el-radio value="model">模型</el-radio>
-                <el-radio value="voice">音频</el-radio>
+                <el-radio value="voice">音频/杂项</el-radio>
               </el-radio-group>
             </el-form-item>
 

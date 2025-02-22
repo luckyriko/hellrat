@@ -44,6 +44,7 @@ pub fn run() {
             my_db::get_mod_records,
             my_db::get_mod_install_files,
             my_db::check_mod_name,
+            my_db::get_statistics,
         ])
         .setup(|app| {
             println!("Tauri 初始化逻辑执行！");

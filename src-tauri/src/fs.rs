@@ -102,11 +102,11 @@ pub fn up_mod_info(
     // 添加预览图片
     if up_img_flag {
         mod_info.preview = copy_preview_img(preview_file, &target_dir)?;
-    }else{
+    } else {
         mod_info.preview = Path::new(preview_file)
-        .file_name() // 获取路径最后一部分
-        .map(|s| s.to_string_lossy().into_owned()) // 转换为 String
-        .unwrap_or_else(|| "".to_string());
+            .file_name() // 获取路径最后一部分
+            .map(|s| s.to_string_lossy().into_owned()) // 转换为 String
+            .unwrap_or_else(|| "".to_string());
     }
 
     // 更新
@@ -197,19 +197,29 @@ fn copy_preview_img(preview_file: &str, target_path: &Path) -> Result<String, St
     // 解决方案：如果要copy的文件已经在存档目录里了，则无需copy，直接返回图片名；
     if !preview_file.is_empty() {
         let preview_path = Path::new(preview_file);
+
+        // let is_same_directory = match preview_path.parent() {
+        //     Some(parent) => parent == target_dir,
+        //     None => false,
+        // };
+
         if preview_path.is_file() {
             if let Some(extension) = preview_path.extension() {
                 if let Some(ext_str) = extension.to_str() {
                     let preview_img = format!("preview.{}", ext_str);
                     let target_preview_path = target_path.join(&preview_img);
-                    fs::copy(&preview_path, &target_preview_path).map_err(|e| {
-                        format!(
-                            "Failed to copy file '{}' to '{}': {}",
-                            preview_path.display(),
-                            target_preview_path.display(),
-                            e
-                        )
-                    })?;
+
+                    // 目标路径与文件路径一致的话就跳过copy操作
+                    if target_preview_path != preview_path {
+                        fs::copy(&preview_path, &target_preview_path).map_err(|e| {
+                            format!(
+                                "Failed to copy file '{}' to '{}': {}",
+                                preview_path.display(),
+                                target_preview_path.display(),
+                                e
+                            )
+                        })?;
+                    }
 
                     return Ok(preview_img);
                 }
