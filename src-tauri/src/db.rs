@@ -1,4 +1,4 @@
-use rusqlite::{params_from_iter, ToSql, params, Connection};
+use rusqlite::{params, params_from_iter, Connection, ToSql};
 extern crate dirs;
 use anyhow::{anyhow, Context, Result};
 use serde::{Deserialize, Serialize};
@@ -25,9 +25,7 @@ pub struct GameModData {
 }
 
 #[tauri::command]
-pub fn db_operate_test() {
-
-}
+pub fn db_operate_test() {}
 
 pub fn check_mod_activate(record_id: i64) -> Result<(), String> {
     let conn = open_data_db().map_err(|e| format!("数据库连接失败: {}", e))?;
@@ -35,7 +33,8 @@ pub fn check_mod_activate(record_id: i64) -> Result<(), String> {
     let mut stmt = conn
         .prepare("SELECT activate FROM mods_records WHERE id = ?1")
         .map_err(|e| format!("删除时查询安装状态失败: {}", e))?;
-    let activate: i64 = stmt.query_row(params![record_id], |row| row.get(0))
+    let activate: i64 = stmt
+        .query_row(params![record_id], |row| row.get(0))
         .map_err(|e| format!("删除时查询安装状态失败: {}", e))?;
 
     println!("activate:{}", activate);
@@ -43,7 +42,6 @@ pub fn check_mod_activate(record_id: i64) -> Result<(), String> {
         return Err("该mod正在使用，请先卸载后再删除".to_string());
     }
     Ok(())
-
 }
 
 #[tauri::command]
@@ -53,18 +51,16 @@ pub fn check_mod_name(name: &str) -> Result<bool, String> {
     let mut stmt = conn
         .prepare("SELECT COUNT(*) as count FROM mods_records WHERE name = ?1")
         .map_err(|e| format!("查询是否有重复名称失败: {}", e))?;
-    let count: i32 = stmt.query_row(params![name], |row| row.get(0))
+    let count: i32 = stmt
+        .query_row(params![name], |row| row.get(0))
         .map_err(|e| format!("查询是否有重复名称失败: {}", e))?;
 
     // println!("count:{}", count);
     if count == 0 {
         Ok(true)
-        
-    }else {
+    } else {
         Ok(false)
-        
     }
-
 }
 
 #[derive(Serialize)]
@@ -74,39 +70,40 @@ pub struct Statistic {
     model_activate_count: i32,
     model_total_count: i32,
     voice_activate_count: i32,
-    voice_total_count: i32
+    voice_total_count: i32,
 }
 
 #[tauri::command]
 pub fn get_statistics() -> Result<Statistic, String> {
     let conn = open_data_db().map_err(|e| format!("数据库连接失败: {}", e))?;
 
-    let mut stmt = conn.prepare(
-        "SELECT 
+    let mut stmt = conn
+        .prepare(
+            "SELECT 
             (SELECT COUNT(*) FROM mods_records WHERE activate=1),
             (SELECT COUNT(*) FROM mods_records),
             (SELECT COUNT(*) FROM mods_records WHERE mod_type = 'model' AND activate=1),
             (SELECT COUNT(*) FROM mods_records WHERE mod_type = 'model'),
             (SELECT COUNT(*) FROM mods_records WHERE mod_type = 'voice' AND activate=1 ),
             (SELECT COUNT(*) FROM mods_records WHERE mod_type = 'voice')
-            "
-    ).map_err(|e| format!("预编译统计SQL失败: {}", e))?;
+            ",
+        )
+        .map_err(|e| format!("预编译统计SQL失败: {}", e))?;
 
-
-    let data = stmt.query_row([], |row| {
-        Ok(Statistic {
-            records_activate_count: row.get(0)?,
-            records_total_count: row.get(1)?,
-            model_activate_count: row.get(2)?,
-            model_total_count: row.get(3)?,
-            voice_activate_count: row.get(4)?,
-            voice_total_count: row.get(5)?,
-
+    let data = stmt
+        .query_row([], |row| {
+            Ok(Statistic {
+                records_activate_count: row.get(0)?,
+                records_total_count: row.get(1)?,
+                model_activate_count: row.get(2)?,
+                model_total_count: row.get(3)?,
+                voice_activate_count: row.get(4)?,
+                voice_total_count: row.get(5)?,
+            })
         })
-    }).map_err(|e| format!("统计失败: {}", e))?;
+        .map_err(|e| format!("统计失败: {}", e))?;
 
     Ok(data)
-
 }
 
 /// 查询mod安装的文件名
@@ -137,7 +134,9 @@ pub fn get_mod_records(mode_type: &str, search: &str) -> Result<Vec<GameMod>, St
     let like_query = format!("%{}%", search);
 
     if !search.is_empty() {
-        sql = String::from("SELECT * FROM mods_records WHERE mod_type = ?1 AND name LIKE ?2 ORDER BY id ASC");
+        sql = String::from(
+            "SELECT * FROM mods_records WHERE mod_type = ?1 AND name LIKE ?2 ORDER BY id ASC",
+        );
         params.push(&like_query);
     }
 
@@ -166,13 +165,14 @@ pub fn get_mod_records(mode_type: &str, search: &str) -> Result<Vec<GameMod>, St
 }
 
 /// 获取所有安装文件
-pub fn get_all_mods_install_files(mod_type :&str) -> Result<Vec<String>> {
+pub fn get_all_mods_install_files(mod_type: &str) -> Result<Vec<String>> {
     let conn = open_data_db().context("数据库连接失败")?;
 
     let mut stmt = conn
         .prepare("SELECT file FROM mods_install_files AS files LEFT JOIN mods_records AS record ON files.record_id = record.id WHERE record.mod_type = ?1").context("创建查询失败")?;
     let files_iter = stmt
-        .query_map([mod_type], |row| Ok(row.get::<_, String>(0)?)).context("查询失败")?;
+        .query_map([mod_type], |row| Ok(row.get::<_, String>(0)?))
+        .context("查询失败")?;
 
     let files = files_iter.filter_map(Result::ok).collect();
 
@@ -218,27 +218,24 @@ fn add_mod_record(conn: &Connection, game_mod: &GameModData) -> Result<i64> {
 pub fn del_one_mod_record(record_id: i64) -> Result<()> {
     let conn = open_data_db()?;
 
-    conn.execute(
-        "DELETE FROM mods_records WHERE id = ?1",
-        params![record_id]
-    )?;
+    conn.execute("DELETE FROM mods_records WHERE id = ?1", params![record_id])?;
 
     conn.execute(
         "DELETE FROM mods_install_files WHERE record_id = ?1",
-        params![record_id]
+        params![record_id],
     )?;
 
     Ok(())
 }
 
-
 /// 一键卸载：删除所有mods_install_files安装记录，mods_records所有activate置为0
-pub fn uninstall_all_mod(mod_type :&str) -> Result<()> {
+pub fn uninstall_all_mod(mod_type: &str) -> Result<()> {
     let mut conn = open_data_db()?;
     let tx = conn.transaction()?;
 
     tx.execute(
-        "UPDATE mods_records SET activate = 0 WHERE mod_type = ?1 ", params![mod_type]
+        "UPDATE mods_records SET activate = 0 WHERE mod_type = ?1 ",
+        params![mod_type],
     )?;
 
     tx.execute(
@@ -276,7 +273,6 @@ pub fn update_mod(game_mod: GameModData) -> Result<()> {
     tx.commit()?;
     Ok(())
 }
-
 
 pub fn add_mod(game_mod: GameModData) -> Result<()> {
     let mut conn = open_data_db()?;

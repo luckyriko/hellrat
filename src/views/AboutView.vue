@@ -8,7 +8,9 @@
 
     <el-row>
       <el-col :span="24" class="row">
-        版本号：{{version}}
+        <span style="margin-right: 20px;">版本号：{{ version }}</span>
+        <el-button @click="getUpdate" type="success" plain>检查更新</el-button>
+
       </el-col>
       <el-col :span="24" class="row">
         作者：理（luckyriko@qq.com）
@@ -36,12 +38,14 @@
 import { ref } from "vue";
 import { getVersion } from '@tauri-apps/api/app';
 import { open } from '@tauri-apps/plugin-shell';
+import { fetch } from "@tauri-apps/plugin-http";
+import semver from "semver";
+
 const version = ref("");
 
 async function fetchAppVersion() {
   try {
     version.value = await getVersion();
-    console.log('App Version:', version);
   } catch (error) {
     console.error('Failed to get app version:', error);
   }
@@ -58,6 +62,58 @@ const suggest = async () => {
   await open("https://www.bilibili.com/opus/1035770623780978689");
 
 }
+
+async function getUpdate() {
+  if (!version.value) {
+    ElMessage.error('本地版本获取失败，无法检测更新！')
+    return;
+  }
+
+  try {
+    const response = await fetch("https://api.luckyriko.com/app/getLatestVersion");
+    // console.log(response.status);  // e.g. 200
+    // console.log(response.statusText); // e.g. "OK"
+
+    if (response.status != 200) {
+      ElMessage.error('服务器正在维护中，请稍后再试！')
+      return;
+    }
+
+    const { version: latestVersion, upMsg = '暂无描述', downUrl = '' } = await response.json();
+    if (semver.gt(latestVersion, version.value)) {
+      console.log('有新版本发布了！');
+      ElMessageBox.confirm(
+        '更新内容：' + upMsg,
+        '最新版本：v' + latestVersion,
+        {
+          confirmButtonText: '前往下载页',
+          cancelButtonText: '取消',
+          type: 'info',
+        }
+      )
+        .then(async () => {
+          if (downUrl) {
+            await open(downUrl);
+          } else {
+            this.donate()
+          }
+        })
+        .catch(() => {
+        })
+
+    } else {
+      ElMessage({
+        message: '已经是最新版本了',
+        type: 'success',
+      })
+    }
+
+  } catch (error) {
+    console.error("请求失败:", error);
+  }
+}
+
+
 </script>
 
 <style scoped lang="scss">
@@ -72,6 +128,7 @@ const suggest = async () => {
 }
 
 .row {
-  margin-bottom: 20px; /* 设置每一行与下一行的间隔 */
+  margin-bottom: 20px;
+  /* 设置每一行与下一行的间隔 */
 }
 </style>

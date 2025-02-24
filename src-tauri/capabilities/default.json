@@ -22,6 +22,11 @@
     "fs:allow-write-text-file",
     "fs:scope-appconfig-recursive",
     "os:default",
-    "shell:default"
+    "shell:default",
+    {
+      "identifier": "http:default",
+      "allow": [{ "url": "https://api.luckyriko.com/app/*" }],
+      "deny": []
+    }
   ]
 }

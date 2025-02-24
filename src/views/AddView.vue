@@ -1,24 +1,20 @@
 <template>
   <el-scrollbar max-height="100vh">
     <div class="container">
-      <!-- <el-row>
+      <el-row>
         <el-col :span="24">
-          <div class="title">安装Mod</div>
+          <div class="title">安装</div>
         </el-col>
-        <el-col :span="24">
+        <!-- <el-col :span="24">
           <div class="desc">1. 请先去设置里配置游戏data目录和mod存档目录；目前只支持单mod目录添加；</div>
         </el-col>
         <el-col :span="24">
           <div class="desc">2. 目前只支持以 9ba626afa44a3aa3
             开头的.patch_xxx、.patch_xxx.gpu_resources（可无）、.patch_xxx.stream（可无）文件的安装，其中xxx必须为数字，其它文件会忽略；</div>
-        </el-col>
-        <el-col :span="24">
-          <div class="desc">3. 无需删除游戏data目录里之前添加过的mod；删除mod需手动去游戏data目录中删除；</div>
-        </el-col>
-    
-      </el-row> -->
+        </el-col> -->
+      </el-row>
 
-      <el-tree style="max-width: 600px; color: red; margin-bottom: 20px;" :data="data" :props="defaultProps"
+      <el-tree style="max-width: 600px; color: red; margin-bottom: 20px;margin-left: 12px;" :data="data" :props="defaultProps"
         @node-click="handleNodeClick" />
 
       <el-row>
@@ -143,7 +139,7 @@ const handleNodeClick = (data) => {
 
 const data = [
   {
-    label: 'Mod目录示例，不支持嵌套目录，点开查看详情',
+    label: 'Mod目录示例，不支持嵌套目录，点击查看详情',
     children: [
       {
         label: '9ba626afa44a3aa3.patch_233',
@@ -345,6 +341,7 @@ const resetForm = (formEl) => {
   font-size: 20px;
   font-weight: bold;
   margin-bottom: 10px;
+  margin-left: 22px;
 }
 
 .detail {
