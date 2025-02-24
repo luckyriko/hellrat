@@ -2,7 +2,7 @@
   <div class="container">
     <el-row>
       <el-col :span="24">
-        <div class="title">Mod列表</div>
+        <div class="title">列表</div>
       </el-col>
     </el-row>
 
@@ -101,7 +101,7 @@
       测试新增
     </el-button> -->
 
-    <el-row style="margin-top: 10px;">
+    <el-row style="margin-top: 6px;">
       <el-col :span="6" style="text-align: center;">
         <el-statistic title="总数量" :value="statistics.records_total_count" />
       </el-col>

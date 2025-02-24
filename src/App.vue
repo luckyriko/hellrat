@@ -79,8 +79,10 @@ const ddup = async () => {
   <div class="page">
     <div class="left">
       <header>
-        <div class="logo-text">Mods管理器</div>
-        <!-- <img alt="app logo" class="logo" src="@src/assets/icon.png" width="100" height="100" /> -->
+        <!-- <div class="logo-text">Mods管理器</div> -->
+        <div class="logo-text">
+          <img alt="app logo" class="logo" src="@src/assets/shushu.png" width="40" height="40" />
+        </div>
       </header>
       <nav>
         <RouterLink to="/" class="nav-link" active-class="active">列表</RouterLink>

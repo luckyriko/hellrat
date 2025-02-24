@@ -118,7 +118,7 @@ async function getUpdate() {
 
 <style scoped lang="scss">
 .container {
-  padding: 30px;
+  padding: 20px;
 }
 
 .title {

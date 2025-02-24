@@ -334,14 +334,14 @@ const resetForm = (formEl) => {
 
 <style scoped lang="scss">
 .container {
-  padding: 30px 10px;
+  padding: 20px 10px;
 }
 
 .title {
   font-size: 20px;
   font-weight: bold;
   margin-bottom: 10px;
-  margin-left: 22px;
+  margin-left: 10px;
 }
 
 .detail {
