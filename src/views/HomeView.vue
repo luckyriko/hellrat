@@ -11,7 +11,7 @@
         <el-segmented v-model="current" :options="options" size="default" @change="searchMod" />
       </el-col>
       <el-col :span="8">
-        <el-input v-model="search" placeholder="请输入名称" clearable>
+        <el-input v-model="search" placeholder="请输入名称" clearable  @keyup.enter.native="searchMod">
           <template #append>
             <el-button @click="searchMod"><i-ep-search /></el-button>
           </template>
@@ -101,7 +101,7 @@
       测试新增
     </el-button> -->
 
-    <el-row style="margin-top: 6px;">
+    <el-row class="footer">
       <el-col :span="6" style="text-align: center;">
         <el-statistic title="总数量" :value="statistics.records_total_count" />
       </el-col>
@@ -112,7 +112,7 @@
               使用状况
             </div>
           </template>
-          <template #suffix>/{{statistics.records_total_count}}</template>
+          <template #suffix>/{{ statistics.records_total_count }}</template>
         </el-statistic>
       </el-col>
       <el-col :span="6" style="text-align: center;">
@@ -122,17 +122,17 @@
               模型数量
             </div>
           </template>
-          <template #suffix>/{{statistics.model_total_count}}</template>
+          <template #suffix>/{{ statistics.model_total_count }}</template>
         </el-statistic>
       </el-col>
       <el-col :span="6" style="text-align: center;">
         <el-statistic :value="statistics.voice_activate_count">
           <template #title>
             <div style="display: inline-flex; align-items: center">
-              音频数量
+              音频杂项
             </div>
           </template>
-          <template #suffix>/{{statistics.voice_total_count}}</template>
+          <template #suffix>/{{ statistics.voice_total_count }}</template>
         </el-statistic>
       </el-col>
     </el-row>
@@ -674,7 +674,18 @@ const previewImg = async (row) => {
 
 <style scoped lang="scss">
 .container {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  box-sizing: border-box;
   padding: 20px 20px 0 20px;
+}
+
+.footer {
+  flex: 1;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
 }
 
 .title {

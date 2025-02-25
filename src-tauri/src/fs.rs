@@ -42,7 +42,7 @@ pub fn get_mod_info(folder_path: String) -> Result<ModInfo, String> {
         files: vec![],
     };
 
-    let images_ext = ["jpg", "jpeg", "png", "gif", "bmp", "webp"]; // 支持的图片格式
+    let images_ext = ["jpg", "jpeg", "png", "gif", "bmp", "webp", "tiff", "ico", "svg", "jfif"];
 
     let entries = fs::read_dir(&path).map_err(|e| format!("无法读取文件夹: {}", e))?;
 
@@ -639,7 +639,7 @@ fn _empty_to_none(s: Option<String>) -> Option<String> {
 /// }
 fn is_not_image(file_name: &str) -> bool {
     let image_extensions = [
-        "jpg", "jpeg", "png", "gif", "bmp", "webp", "tiff", "ico", "svg",
+        "jpg", "jpeg", "png", "gif", "bmp", "webp", "tiff", "ico", "svg", "jfif"
     ];
 
     match Path::new(file_name).extension() {

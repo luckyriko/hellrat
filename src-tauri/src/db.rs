@@ -135,7 +135,7 @@ pub fn get_mod_records(mode_type: &str, search: &str) -> Result<Vec<GameMod>, St
 
     if !search.is_empty() {
         sql = String::from(
-            "SELECT * FROM mods_records WHERE mod_type = ?1 AND name LIKE ?2 ORDER BY id ASC",
+            "SELECT * FROM mods_records WHERE mod_type = ?1 AND memo LIKE ?2 ORDER BY id ASC",
         );
         params.push(&like_query);
     }
