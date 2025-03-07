@@ -134,7 +134,7 @@ onMounted(async () => {
 });
 
 const handleNodeClick = (data) => {
-  console.log(data)
+  // console.log(data)
 }
 
 const data = [
@@ -222,7 +222,7 @@ const onSelect = async () => {
 
     try {
       const modInfo = await invoke("get_mod_info", { folderPath: selectedPath });
-      console.log('---modInfo---', modInfo);
+      // console.log('---modInfo---', modInfo);
       form.preview = modInfo.first_image_path;
       form.mod_type = modInfo.mod_type;
       modFiles.value = modInfo.files;
