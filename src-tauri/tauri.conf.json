@@ -14,7 +14,8 @@
       {
         "title": "鼠鼠我啊，最喜欢打HELLDIVERS™2了！",
         "width": 1024,
-        "height": 768
+        "height": 768,
+        "dragDropEnabled": false
       }
     ],
     "security": {

@@ -11,7 +11,7 @@
         <el-segmented v-model="current" :options="options" size="default" @change="searchMod" />
       </el-col>
       <el-col :span="8">
-        <el-input v-model="search" placeholder="请输入名称" clearable  @keyup.enter.native="searchMod">
+        <el-input v-model="search" placeholder="请输入名称" clearable @keyup.enter.native="searchMod">
           <template #append>
             <el-button @click="searchMod"><i-ep-search /></el-button>
           </template>
@@ -24,13 +24,18 @@
       <el-col :span="3">
         <el-button @click="deploy" type="primary" plain>应用安装</el-button>
       </el-col>
-      <el-col :span="3" :offset="3">
+      <el-col :span="3">
+        <el-button @click="toSort" color="orange" plain>编辑排序</el-button>
+      </el-col>
+      <el-col :span="3" :offset="0">
         <el-button @click="uninstallAllMods" type="danger" plain>一键卸载</el-button>
       </el-col>
     </el-row>
-
-    <el-table ref="tableRef" :default-sort="{ prop: 'id', order: 'descending' }" :data="modsData" height="600"
-      style="width: 100%" row-key="id" stripe @expand-change="getModDetail">
+    <!-- <el-button class="mt-4" style="width: 100%" @click="onAddItem">
+      测试新增
+    </el-button> -->
+    <el-table ref="tableRef" :default-sort="{ prop: 'id', order: 'descending' }" :data="modsData" style="width: 100%;height:100%"
+      row-key="id" stripe @expand-change="getModDetail">
       <el-table-column type="expand">
         <template #default="props">
           <div style="margin-left: 20px;" v-if="props.row?.files && props.row.files.length > 0">
@@ -97,9 +102,6 @@
         </template>
       </el-table-column>
     </el-table>
-    <!-- <el-button class="mt-4" style="width: 100%" @click="onAddItem">
-      测试新增
-    </el-button> -->
 
     <el-row class="footer">
       <el-col :span="6" style="text-align: center;">
@@ -137,6 +139,8 @@
       </el-col>
     </el-row>
   </div>
+
+  <SortableDiglog v-model="dialogVisible"  @close="closeDialog"></SortableDiglog>
 
   <el-dialog v-model="dialogFormVisible" title="修改Mod信息" width="500" :close-on-click-modal="false">
     <el-form ref="formRef" :model="form" :rules="rules">
@@ -192,9 +196,24 @@ import { open as openDialog } from '@tauri-apps/plugin-dialog';
 import { invoke, convertFileSrc } from '@tauri-apps/api/core';
 import { exists, mkdir, create, readTextFile, writeTextFile, BaseDirectory } from '@tauri-apps/plugin-fs';
 import { join } from '@tauri-apps/api/path';
+import SortableDiglog from './components/SortableDiglog.vue';
 
 const current = ref('模型');
 const options = ['模型', '音频/杂项'];
+
+// 排序 
+// 定义一个响应式变量，用于控制对话框的显示与隐藏
+const dialogVisible = ref(false);
+
+// 打开对话框的函数，将 dialogVisible 设置为 true
+const toSort = () => {
+  dialogVisible.value = true;
+};
+
+// 关闭对话框的函数，将 dialogVisible 设置为 false
+const closeDialog = () => {
+  dialogVisible.value = false;
+};
 
 // 编辑弹窗
 const formRef = ref();
@@ -639,7 +658,7 @@ const onAddItem = () => {
   }, -Infinity);
   modsData.value.push({
     id: Number(maxId) + 1,
-    name: 'Tom',
+    memo: 'Tom',
     mod_type: 'California',
     activate: 'Los Angeles',
     desc: 'No. 189, Grove St, Los Angeles',
@@ -682,10 +701,8 @@ const previewImg = async (row) => {
 }
 
 .footer {
-  flex: 1;
-  display: flex;
-  flex-direction: row;
-  align-items: center;
+  padding: 4px;
+  // background-color: red;
 }
 
 .title {
