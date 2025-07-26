@@ -24,6 +24,7 @@ fn init_database(_app: &tauri::AppHandle) -> tauri::Result<()> {
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_global_shortcut::Builder::new().build())
         .plugin(tauri_plugin_http::init())
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_os::init())
@@ -40,6 +41,7 @@ pub fn run() {
             my_fs::remove_dir_all,
             my_fs::uninstall_mods_all,
             my_fs::deploy_mods,
+            my_fs::unzip_one_file,
             my_db::db_operate_test,
             my_db::get_mod_records,
             my_db::get_mod_install_files,

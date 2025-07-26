@@ -5,42 +5,51 @@ const router = createRouter({
   routes: [
     {
       path: '/',
-      name: 'home',
-      component:  () => import('../views/HomeView.vue'),
+      component: () => import('../views/MainView.vue'),
+      children: [
+        {
+          path: 'home',
+          component: () => import('../views/HomeView.vue'),
+        },
+        {
+          path: 'about',
+          component: () => import('../views/AboutView.vue'),
+        },
+        {
+          path: 'add',
+          component: () => import('../views/AddView.vue'),
+        },
+        {
+          path: 'import',
+          component: () => import('../views/ImportView.vue'),
+        },
+        {
+          path: 'help',
+          component: () => import('../views/HelpView.vue'),
+        },
+        {
+          path: 'setting',
+          component: () => import('../views/SettingView.vue'),
+        },
+        {
+          path: 'test',
+          component: () => import('../views/TestView.vue'),
+        },
+
+      ]
     },
     {
-      path: '/about',
-      name: 'about',
-      // route level code-splitting
-      // this generates a separate chunk (About.[hash].js) for this route
-      // which is lazy-loaded when the route is visited.
-      component: () => import('../views/AboutView.vue'),
+      path: '/upload',
+      name: 'upload',
+      component: () => import('../views/UploadView.vue'),
     },
     {
-      path: '/add',
-      name: 'add',
-      component: () => import('../views/AddView.vue'),
+      path: '/keyboard',
+      name: 'keyboard',
+      component: () => import('../views/KeyboardView.vue'),
     },
-    {
-      path: '/import',
-      name: 'import',
-      component: () => import('../views/ImportView.vue'),
-    },
-    {
-      path: '/help',
-      name: 'help',
-      component: () => import('../views/HelpView.vue'),
-    },
-    {
-      path: '/setting',
-      name: 'setting',
-      component: () => import('../views/SettingView.vue'),
-    },
-    {
-      path: '/test',
-      name: 'test',
-      component: () => import('../views/TestView.vue'),
-    },
+
+    
   ],
 })
 

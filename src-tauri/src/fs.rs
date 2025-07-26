@@ -2,10 +2,12 @@ use crate::db;
 use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::fs;
+use std::io;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 use tauri::AppHandle;
 use tauri_plugin_dialog::DialogExt;
+use zip::ZipArchive;
 
 /// 用于打开一个文件夹选择对话框，并阻塞当前线程，直到用户选择一个文件夹或取消选择。
 #[allow(dead_code)]
@@ -42,7 +44,9 @@ pub fn get_mod_info(folder_path: String) -> Result<ModInfo, String> {
         files: vec![],
     };
 
-    let images_ext = ["jpg", "jpeg", "png", "gif", "bmp", "webp", "tiff", "ico", "svg", "jfif"];
+    let images_ext = [
+        "jpg", "jpeg", "png", "gif", "bmp", "webp", "tiff", "ico", "svg", "jfif",
+    ];
 
     let entries = fs::read_dir(&path).map_err(|e| format!("无法读取文件夹: {}", e))?;
 
@@ -639,7 +643,7 @@ fn _empty_to_none(s: Option<String>) -> Option<String> {
 /// }
 fn is_not_image(file_name: &str) -> bool {
     let image_extensions = [
-        "jpg", "jpeg", "png", "gif", "bmp", "webp", "tiff", "ico", "svg", "jfif"
+        "jpg", "jpeg", "png", "gif", "bmp", "webp", "tiff", "ico", "svg", "jfif",
     ];
 
     match Path::new(file_name).extension() {
@@ -675,3 +679,58 @@ fn extract_name(file_name: &str) -> &str {
 //     let re = Regex::new(r"^([a-f0-9]+)\.patch_\d+$").unwrap();
 //     re.captures(file_name).map(|cap| cap[1].to_string())
 // }
+
+#[allow(dead_code)]
+#[tauri::command]
+pub fn unzip_one_file(zip_path: String) {
+    // if let Some(folder_path) = app.dialog().file().blocking_pick_folder() {
+    //     // 用户选择了文件夹
+    //     println!("用户选择的文件夹路径: {:?}", folder_path);
+    // } else {
+    //     // 用户取消了选择
+    //     println!("没有选择文件夹");
+    // }
+
+    if let Some(stem) = Path::new(&zip_path).file_stem() {
+        println!("不带扩展名的名称为: {}", stem.to_string_lossy());
+    }
+
+    let file = fs::File::open(zip_path).unwrap();
+    let dest_path = String::from("C:/Users/yaya/Documents/Code/tauri2-test/unzip");
+    let mut archive = ZipArchive::new(file).unwrap();
+
+    for i in 0..archive.len() {
+        let mut file = archive.by_index(i).unwrap();
+        let outpath = match file.enclosed_name() {
+            Some(path) => PathBuf::from(&dest_path).join(path),
+            None => continue,
+        };
+
+        // 如果 ZIP 文件中的某个文件附加了注释，就打印出来。
+        {
+            let comment = file.comment();
+            if !comment.is_empty() {
+                println!("File {i} comment: {comment}");
+            }
+        }
+
+        if file.is_dir() {
+            println!("File {} extracted to \"{}\"", i, outpath.display());
+            fs::create_dir_all(&outpath).unwrap();
+        } else {
+            println!(
+                "File {} extracted to \"{}\" ({} bytes)",
+                i,
+                outpath.display(),
+                file.size()
+            );
+            if let Some(p) = outpath.parent() {
+                if !p.exists() {
+                    fs::create_dir_all(p).unwrap();
+                }
+            }
+            let mut outfile = fs::File::create(&outpath).unwrap();
+            io::copy(&mut file, &mut outfile).unwrap();
+        }
+    }
+}

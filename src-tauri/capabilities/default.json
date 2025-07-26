@@ -3,10 +3,14 @@
   "identifier": "default",
   "description": "Capability for the main window",
   "windows": [
-    "main"
+    "main",
+    "upload",
+    "keyboard"
   ],
   "permissions": [
     "core:default",
+    "core:window:allow-set-fullscreen",
+    "core:webview:allow-create-webview-window",
     "opener:default",
     "dialog:default",
     "fs:default",

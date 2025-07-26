@@ -1,6 +1,6 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "helldivers2-mods-manager",
+  "productName": "HellRat",
   "version": "1.0.1",
   "identifier": "com.luckyriko.helldivers2",
   "build": {
@@ -12,8 +12,9 @@
   "app": {
     "windows": [
       {
+        "label": "main",
         "title": "鼠鼠我啊，最喜欢打HELLDIVERS™2了！",
-        "width": 1024,
+        "width": 1280,
         "height": 768,
         "dragDropEnabled": false
       }

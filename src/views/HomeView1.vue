@@ -1,156 +1,80 @@
 <template>
   <div class="container" @click="displayNoneMenu">
-    <!-- 标题 -->
-    <el-row>
-      <el-col :span="24">
-        <div class="title">列表</div>
-      </el-col>
-    </el-row>
-    <!-- 标题. -->
+    <div class="header">
+      <el-button @click="toggleView" icon="Switch" circle>切换</el-button>
 
-    <!-- 工具栏 -->
-    <el-row :gutter="20">
-      <el-col :span="4">
-        <el-segmented v-model="current" :options="options" size="default" @change="searchMod" />
-      </el-col>
-      <el-col :span="8">
-        <el-input v-model="search" placeholder="请输入名称" clearable @keyup.enter.native="searchMod">
-          <template #append>
-            <el-button @click="searchMod"><i-ep-search /></el-button>
-          </template>
-        </el-input>
-      </el-col>
+      <!-- 标题 -->
+      <!-- <el-row>
+        <el-col :span="24">
+          <div class="title">列表</div>
+        </el-col>
+      </el-row> -->
+      <!-- 标题. -->
 
-      <el-col :span="3">
-        <el-button @click="activeAllMods" type="success" plain>全部启用</el-button>
-      </el-col>
-      <el-col :span="3">
-        <el-button @click="deploy" type="primary" plain>应用安装</el-button>
-      </el-col>
-      <el-col :span="3">
-        <el-button @click="toSort" color="orange" plain>编辑排序</el-button>
-      </el-col>
-      <el-col :span="3" :offset="0">
-        <el-button @click="uninstallAllMods" type="danger" plain>一键卸载</el-button>
-      </el-col>
-    </el-row>
-    <!-- <el-button class="mt-4" style="width: 100%" @click="onAddItem">
+      <!-- 工具栏 -->
+      <!-- <el-row :gutter="20">
+        <el-col :span="4">
+          <el-segmented v-model="current" :options="options" size="default" @change="searchMod" />
+        </el-col>
+        <el-col :span="8">
+          <el-input v-model="search" placeholder="请输入名称" clearable @keyup.enter.native="searchMod">
+            <template #append>
+              <el-button @click="searchMod"><i-ep-search /></el-button>
+            </template>
+</el-input>
+</el-col>
+
+<el-col :span="3">
+  <el-button @click="activeAllMods" type="success" plain>全部启用</el-button>
+</el-col>
+<el-col :span="3">
+  <el-button @click="deploy" type="primary" plain>应用安装</el-button>
+</el-col>
+<el-col :span="3">
+  <el-button @click="toSort" color="orange" plain>编辑排序</el-button>
+</el-col>
+<el-col :span="3" :offset="0">
+  <el-button @click="uninstallAllMods" type="danger" plain>一键卸载</el-button>
+</el-col>
+</el-row> -->
+      <!-- <el-button class="mt-4" style="width: 100%" @click="onAddItem">
       测试新增
     </el-button> -->
-    <!-- 工具栏. -->
+      <!-- 工具栏. -->
+    </div>
 
     <!-- 表格 -->
-    <el-table ref="tableRef" :default-sort="{ prop: 'id', order: 'descending' }" :data="modsData"
-      style="width: 100%;height:100%" row-key="id" stripe @expand-change="getModDetail"
-      @row-contextmenu="handleContextMenu">
-      <el-table-column type="expand">
-        <template #default="props">
-          <div style="margin-left: 20px;" v-if="props.row?.files && props.row.files.length > 0">
-            <p v-for="(item, index) in props.row.files" :key="index">{{ item }}</p>
+    <!-- <el-scrollbar class="content">
+      <div class="card-grid" id="sortableList">
+        <div class="card" v-for="item in tableData" >
+          <img src="https://luckyriko.com/assets/images/cover3.jpg" alt="示例图片">
+          <div class="card-text">
+            <h3>{{item.name}}</h3>
+            <p>卡片描述信息</p>
           </div>
-          <div style="margin-left: 20px;" v-else>未安装 / 没有实际文件被安装</div>
-        </template>
-      </el-table-column>
-      <el-table-column prop="id" label="ID" sortable min-width="55" align="center" />
-      <el-table-column label="名称" min-width="220">
-        <template #default="scope">
-          <div style="display: flex; flex-direction: row; align-items: center;">
-            <!-- @contextmenu="handleContextMenu($event, scope.row.id)" -->
-            <div v-if="scope.row.link ? true : false">
-              <el-link :underline="true" type="primary" @click="openBrowser(scope.row.link)">{{ scope.row.memo
-              }}</el-link>
-            </div>
-            <div v-else>
-              {{ scope.row.memo }}
-            </div>
+        </div>
 
-            <div v-if="scope.row.preview" style="display: flex; flex-direction: row; align-items: center;">
-              <el-popover :width="500" placement="right"
-                popper-style="box-shadow: rgb(14 18 22 / 35%) 0px 10px 38px -10px, rgb(14 18 22 / 20%) 0px 10px 20px -15px; padding: 20px;">
-                <!-- 图片图标 -->
-                <template #reference>
-                  <el-icon size="20" color="purple"><i-ep-picture-rounded /></el-icon>
-                </template>
-                <!-- 图片内容 -->
-                <template #default>
-                  <el-image style="width: 450px" :src="scope.row.previewPath" fit="fill" />
-                </template>
-              </el-popover>
-            </div>
-          </div>
-        </template>
-      </el-table-column>
-      <!-- <el-table-column prop="mod_type" label="类型" :formatter="type" align="center" /> -->
-      <el-table-column prop="activate" label="安装" :filters="[
-        { text: '已安装', value: true },
-        { text: '未安装', value: false },
-      ]" :filter-method="filterHandler" filter-placement="bottom-end" align="center">
-        <template #default="scope">
-          <!-- <el-tag :type="scope.row.activate ? 'success' : 'danger'" disable-transitions>{{ scope.row.activate ?
-            '已安装' : '未安装' }}</el-tag> -->
-          <el-switch v-model="scope.row.activate" inline-prompt @change="activateChange(scope.row)"
-            style="--el-switch-on-color: #13ce66; --el-switch-off-color: #ff4949" active-text="是" inactive-text="否" />
-        </template>
-      </el-table-column>
-      <el-table-column prop="author" label="作者" show-overflow-tooltip align="center" />
-      <!-- <el-table-column prop="link" label="链接" /> -->
-      <el-table-column property="desc" label="详情" width="140" show-overflow-tooltip align="center" />
-      <!-- <el-table-column prop="preview" label="预览图" /> -->
-      <el-table-column fixed="right" label="操作" min-width="180" align="center">
-        <template #default="scope">
-          <el-button size="small" @click="openDir(scope.row)">
-            打开
-          </el-button>
-          <el-button size="small" @click="handleEdit(scope.row)">
-            编辑
-          </el-button>
-          <el-button type="danger" size="small" @click="deleteMod(scope.row)">
-            删除
-          </el-button>
-        </template>
-      </el-table-column>
-    </el-table>
+      </div>
+    </el-scrollbar> -->
+
+
+    <el-scrollbar class="main-scroll">
+      <div :class="['content-area', viewMode]" id="sortableList">
+        <div v-for="item in tableData" :key="item.id" class="item">
+          <img src="https://luckyriko.com/assets/images/cover3.jpg" alt="图" />
+          <div class="text">{{ item.name }}</div>
+        </div>
+      </div>
+    </el-scrollbar>
+
     <!-- 表格. -->
 
     <!-- 右键功能 -->
-    <Menu ref="menuRef" :mentList="mentList" @select-label="selectMenuLabel"></Menu>
+    <!-- <Menu ref="menuRef" :mentList="mentList" @select-label="selectMenuLabel"></Menu> -->
     <!-- 右键功能. -->
 
-    <el-row class="footer">
-      <el-col :span="6" style="text-align: center;">
-        <el-statistic title="总数量" :value="statistics.records_total_count" />
-      </el-col>
-      <el-col :span="6" style="text-align: center;">
-        <el-statistic :value="statistics.records_activate_count">
-          <template #title>
-            <div style="display: inline-flex; align-items: center">
-              使用状况
-            </div>
-          </template>
-          <template #suffix>/{{ statistics.records_total_count }}</template>
-        </el-statistic>
-      </el-col>
-      <el-col :span="6" style="text-align: center;">
-        <el-statistic :value="statistics.model_activate_count">
-          <template #title>
-            <div style="display: inline-flex; align-items: center">
-              模型数量
-            </div>
-          </template>
-          <template #suffix>/{{ statistics.model_total_count }}</template>
-        </el-statistic>
-      </el-col>
-      <el-col :span="6" style="text-align: center;">
-        <el-statistic :value="statistics.voice_activate_count">
-          <template #title>
-            <div style="display: inline-flex; align-items: center">
-              音频杂项
-            </div>
-          </template>
-          <template #suffix>/{{ statistics.voice_total_count }}</template>
-        </el-statistic>
-      </el-col>
-    </el-row>
+    <div class="footer">底部固定区域</div>
+
   </div>
 
   <SortableDiglog v-model="dialogVisible" @close="closeDialog"></SortableDiglog>
@@ -211,6 +135,165 @@ import { exists, mkdir, create, readTextFile, writeTextFile, BaseDirectory } fro
 import { join } from '@tauri-apps/api/path';
 import SortableDiglog from './components/SortableDiglog.vue';
 import Menu from './components/Menu.vue';
+import Sortable from 'sortablejs'
+
+const viewMode = ref('grid') // grid or list
+
+const toggleView = () => {
+  viewMode.value = viewMode.value === 'grid' ? 'list' : 'grid'
+}
+
+// 排序数据
+const tableData = [
+  {
+    date: '2016-05-03',
+    name: 'Tom',
+    address: 'No. 189, Grove St, Los Angeles',
+  },
+  {
+    date: '2016-05-02',
+    name: 'Cilly',
+    address: 'No. 189, Grove St, Los Angeles',
+  },
+  {
+    date: '2016-05-04',
+    name: 'Linda',
+    address: 'No. 189, Grove St, Los Angeles',
+  },
+  {
+    date: '2016-05-01',
+    name: 'John',
+    address: 'No. 189, Grove St, Los Angeles',
+  },
+  {
+    date: '2016-05-03',
+    name: 'Tom',
+    address: 'No. 189, Grove St, Los Angeles',
+  },
+  {
+    date: '2016-05-02',
+    name: 'Cilly',
+    address: 'No. 189, Grove St, Los Angeles',
+  },
+  {
+    date: '2016-05-04',
+    name: 'Linda',
+    address: 'No. 189, Grove St, Los Angeles',
+  },
+  {
+    date: '2016-05-01',
+    name: 'John',
+    address: 'No. 189, Grove St, Los Angeles',
+  },
+  {
+    date: '2016-05-03',
+    name: 'Tom',
+    address: 'No. 189, Grove St, Los Angeles',
+  },
+  {
+    date: '2016-05-02',
+    name: 'Cilly',
+    address: 'No. 189, Grove St, Los Angeles',
+  },
+  {
+    date: '2016-05-04',
+    name: 'Linda',
+    address: 'No. 189, Grove St, Los Angeles',
+  },
+  {
+    date: '2016-05-01',
+    name: 'John',
+    address: 'No. 189, Grove St, Los Angeles',
+  },
+  {
+    date: '2016-05-03',
+    name: 'Tom',
+    address: 'No. 189, Grove St, Los Angeles',
+  },
+  {
+    date: '2016-05-02',
+    name: 'Cilly',
+    address: 'No. 189, Grove St, Los Angeles',
+  },
+  {
+    date: '2016-05-04',
+    name: 'Linda',
+    address: 'No. 189, Grove St, Los Angeles',
+  },
+  {
+    date: '2016-05-01',
+    name: 'John',
+    address: 'No. 189, Grove St, Los Angeles',
+  },
+  {
+    date: '2016-05-03',
+    name: 'Tom',
+    address: 'No. 189, Grove St, Los Angeles',
+  },
+  {
+    date: '2016-05-02',
+    name: 'Cilly',
+    address: 'No. 189, Grove St, Los Angeles',
+  },
+  {
+    date: '2016-05-04',
+    name: 'Linda',
+    address: 'No. 189, Grove St, Los Angeles',
+  },
+  {
+    date: '2016-05-01',
+    name: 'John',
+    address: 'No. 189, Grove St, Los Angeles',
+  },
+  {
+    date: '2016-05-03',
+    name: 'Tom',
+    address: 'No. 189, Grove St, Los Angeles',
+  },
+  {
+    date: '2016-05-02',
+    name: 'Cilly',
+    address: 'No. 189, Grove St, Los Angeles',
+  },
+  {
+    date: '2016-05-04',
+    name: 'Linda',
+    address: 'No. 189, Grove St, Los Angeles',
+  },
+  {
+    date: '2016-05-01',
+    name: 'John',
+    address: 'No. 189, Grove St, Los Angeles',
+  },
+]
+
+function setSort() {
+  const el = document.getElementById('sortableList');
+  new Sortable(el, {
+    sort: true,
+    animation: 150,
+    swapThreshold: 0.5,
+
+    // handle: '.handle-drag',
+    ghostClass: 'sortable-ghost',
+    // easing: 'cubic-bezier(1, 0, 0, 1)',
+    onStart: (e) => {
+      console.log('onstart:', e);
+    },
+    onEnd: (e) => {
+      // const targetRow = tableData.splice(e.oldIndex, 1)[0]
+      // tableData.splice(e.newIndex, 0, targetRow)
+      console.log('onEnd:', e)
+
+      submitSortResult()
+
+    },
+  })
+}
+
+const submitSortResult = () => {
+  console.log('submitSortResult')
+}
 
 const current = ref('模型');
 const options = ['模型', '音频/杂项'];
@@ -416,6 +499,9 @@ onMounted(async () => {
     } else {
       ElMessage.error('请先去设置里添加游戏data目录和mod存档目录')
     }
+
+    setSort();
+
   } catch (error) {
 
   }
@@ -768,9 +854,27 @@ const previewImg = async (row) => {
   position: relative;
 }
 
+
+.header,
 .footer {
+  height: 60px;
+  background: #f5f5f5;
+  border-bottom: 1px solid #ddd;
+}
+
+.footer {
+  border-top: 1px solid #ddd;
+
   padding: 4px;
   // background-color: red;
+}
+
+
+.content {
+  flex: 1; // ✅ 自动撑满剩余空间
+  overflow: auto; // ✅ 激活 el-scrollbar 内部滚动
+  background: #fff;
+  padding: 16px;
 }
 
 .title {
@@ -791,6 +895,105 @@ const previewImg = async (row) => {
     position: absolute;
     right: -10px;
     top: -10px;
+  }
+}
+
+.sortable-ghost {
+  color: white;
+  background-color: skyblue !important;
+}
+
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 20px;
+  padding: 20px;
+  // height: 100%;
+  // background-color: red;
+
+  .card {
+    background-color: #fff;
+    border: 1px solid #eee;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+    transition: transform 0.2s ease;
+    display: flex;
+    flex-direction: column;
+
+    // &:hover {
+    //   transform: translateY(-4px);
+    // }
+
+    img {
+      width: 100%;
+      height: 160px;
+      object-fit: cover;
+    }
+
+    .card-text {
+      padding: 12px;
+      font-size: 16px;
+      text-align: center;
+
+      h3 {
+        margin: 0;
+        font-size: 18px;
+      }
+
+      p {
+        font-size: 14px;
+        color: #666;
+        margin-top: 6px;
+      }
+    }
+  }
+}
+
+.content-area {
+  display: grid;
+  gap: 16px;
+  padding: 16px;
+
+  .item {
+    background: #f0f0f0;
+    border-radius: 6px;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+
+    img {
+      width: 100%;
+      max-width: 120px;
+      object-fit: cover;
+    }
+
+    .text {
+      margin-top: 8px;
+    }
+  }
+
+  &.grid {
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  }
+
+  &.list {
+    grid-template-columns: 1fr;
+
+    .item {
+      flex-direction: row;
+      align-items: center;
+
+      img {
+        width: 120px;
+        margin-right: 16px;
+      }
+
+      .text {
+        margin-top: 0;
+      }
+    }
   }
 }
 </style>
