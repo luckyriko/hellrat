@@ -1,7 +1,7 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
-  "description": "Capability for the main window",
+  "description": "Capability for some window",
   "windows": [
     "main",
     "upload",
@@ -11,6 +11,12 @@
     "core:default",
     "core:window:allow-set-fullscreen",
     "core:webview:allow-create-webview-window",
+    "core:webview:allow-set-webview-focus",
+    "core:webview:allow-webview-close",
+    "core:webview:allow-webview-show",
+    "core:webview:allow-webview-hide",
+    "core:window:allow-create",
+    "core:window:allow-set-focus",
     "opener:default",
     "dialog:default",
     "fs:default",
@@ -27,6 +33,9 @@
     "fs:scope-appconfig-recursive",
     "os:default",
     "shell:default",
+    "global-shortcut:allow-is-registered",
+    "global-shortcut:allow-register",
+    "global-shortcut:allow-unregister",
     {
       "identifier": "http:default",
       "allow": [{ "url": "https://api.luckyriko.com/app/*" }],
