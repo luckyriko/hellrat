@@ -9,12 +9,14 @@
 
 <script setup>
 import { invoke } from '@tauri-apps/api/core';
+import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow';
 import { ref } from 'vue'
 
 const text = ref('');
 
 async function confirmInput() {
   if (!text.value) {
+    await getCurrentWebviewWindow().hide();
     return;
   }
   await invoke('confirm_input', { text: text.value });

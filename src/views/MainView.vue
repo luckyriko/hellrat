@@ -89,7 +89,7 @@ const ddup = async () => {
         <RouterLink to="/setting" class="nav-link" active-class="active">设置</RouterLink>
         <RouterLink to="/help" class="nav-link" active-class="active">帮助</RouterLink>
         <RouterLink to="/about" class="nav-link" active-class="active">关于</RouterLink>
-        <RouterLink to="/test" class="nav-link" active-class="active">测试</RouterLink>
+        <!-- <RouterLink to="/test" class="nav-link" active-class="active">测试</RouterLink> -->
         <!-- <RouterLink to="/upload" class="nav-link" active-class="active">shangchuan</RouterLink> -->
 
       </nav>

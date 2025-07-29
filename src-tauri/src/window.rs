@@ -55,6 +55,8 @@ pub async fn create_webview_window(app_handle: AppHandle, params: WebviewWindowP
         .unwrap();
 
         let _ = webview_window.set_focus();
+
+        println!("窗口已创建");
     });
 }
 
@@ -73,7 +75,7 @@ pub fn hide_webview_window(app: AppHandle, label: &str) -> Result<()> {
 // 关闭窗口
 #[allow(dead_code)]
 #[tauri::command()]
-pub fn close_keyboard_window(app: AppHandle, label: &str) -> Result<()> {
+pub fn close_webview_window(app: AppHandle, label: &str) -> Result<()> {
     if let Some(webview_window) = app.get_webview_window(label) {
         webview_window.close()?;
         println!("窗口 {} 已关闭", label);

@@ -3,9 +3,11 @@ mod db;
 mod fs;
 mod keyboard;
 mod window;
+mod config;
 
 use crate::db as my_db;
 use crate::fs as my_fs;
+use crate::window as my_window;
 use crate::keyboard as my_keyboard;
 
 #[tauri::command]
@@ -65,16 +67,27 @@ pub fn run() {
             my_db::get_mod_install_files,
             my_db::check_mod_name,
             my_db::get_statistics,
+            my_window::close_webview_window,
             my_keyboard::confirm_input,
         ])
         .setup(|app| {
             println!("Tauri 初始化逻辑执行！");
 
+            // let app_handle = app.handle().clone();
+            // config::load_config(app_handle)?;
             // 数据库初始化
             init_database()?;
 
-            // 注册快捷键绑定
-            my_keyboard::register_global_shortcut(app)?;
+            // 注册快捷键
+            let register_status = my_keyboard::register_global_shortcut(app);
+            match register_status {
+                Ok(_) => {
+                    println!("注册快捷键成功");
+                }
+                Err(e) => {
+                    println!("注册快捷键失败: {}", e);
+                }
+            }
 
             Ok(())
         })

@@ -8,6 +8,10 @@ const router = createRouter({
       component: () => import('../views/MainView.vue'),
       children: [
         {
+          path: '',
+          redirect: '/home',
+        },
+        {
           path: 'home',
           component: () => import('../views/HomeView.vue'),
         },
@@ -49,7 +53,7 @@ const router = createRouter({
       component: () => import('../views/KeyboardView.vue'),
     },
 
-    
+
   ],
 })
 

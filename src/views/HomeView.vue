@@ -28,7 +28,7 @@
         <el-button @click="deploy" type="primary" plain>应用安装</el-button>
       </el-col>
       <el-col :span="3">
-        <el-button @click="toSort" color="orange" plain>编辑排序</el-button>
+        <!-- <el-button @click="toSort" color="orange" plain>编辑排序</el-button> -->
       </el-col>
       <el-col :span="3" :offset="0">
         <el-button @click="uninstallAllMods" type="danger" plain>一键卸载</el-button>
