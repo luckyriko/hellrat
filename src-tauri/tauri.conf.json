@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "HellRat",
-  "version": "1.0.1",
-  "identifier": "com.luckyriko.helldivers2",
+  "version": "2.0.0",
+  "identifier": "com.luckyriko.hellrat",
   "build": {
     "beforeDevCommand": "pnpm dev",
     "devUrl": "http://localhost:1420",
@@ -13,7 +13,7 @@
     "windows": [
       {
         "label": "main",
-        "title": "鼠鼠我啊，最喜欢打HELLDIVERS™2了！",
+        "title": "Ciallo～(∠・ω< )⌒☆",
         "width": 1280,
         "height": 768,
         "dragDropEnabled": false

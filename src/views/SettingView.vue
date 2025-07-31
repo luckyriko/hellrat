@@ -7,44 +7,56 @@
         </el-col>
       </el-row>
 
-      <el-form :model="form" label-width="150px" style="max-width: 760px" label-position="left" ref="modFormRef"
-        :rules="modFormRules">
-        <el-form-item label="设置存储路径" prop="configDir">
+      <el-form :model="gameMod" label-width="150px" style="max-width: 760px" label-position="right" ref="gameModFormRef"
+        :rules="gameModFormRules">
+        <el-form-item label="软件配置目录" prop="app_config_path">
           <el-col :span="18">
-            <el-input v-model.trim="form.configDir" disabled />
+            <el-input v-model.trim="gameMod.app_config_path" disabled />
           </el-col>
           <el-col :span="2" :offset="1">
-            <el-button type="primary" @click="openDir(form.configDir)">打开</el-button>
+            <el-button type="primary" @click="openDir(gameMod.app_config_path)">打开</el-button>
           </el-col>
         </el-form-item>
 
-        <el-form-item label="游戏data路径" prop="gameDataDir">
+        <el-form-item label="游戏data目录" prop="game_data_path">
           <el-col :span="18">
-            <el-input v-model.trim="form.gameDataDir" />
+            <el-input v-model.trim="gameMod.game_data_path" />
           </el-col>
           <el-col :span="2" :offset="1">
             <el-button type="primary" @click="onSelect">选择</el-button>
           </el-col>
           <el-col :span="2" :offset="1">
-            <el-button type="primary" @click="openDir(form.gameDataDir)">打开</el-button>
+            <el-button type="primary" @click="openDir(gameMod.game_data_path)">打开</el-button>
           </el-col>
         </el-form-item>
 
-        <el-form-item label="Mods存档路径" prop="modsDir">
+        <el-form-item label="Mod存档目录" prop="mods_store_path">
           <el-col :span="18">
-            <el-input v-model.trim="form.modsDir" />
+            <el-input v-model.trim="gameMod.mods_store_path" />
           </el-col>
           <el-col :span="2" :offset="1">
             <el-button type="primary" @click="onModsSelect">选择</el-button>
           </el-col>
           <el-col :span="2" :offset="1">
-            <el-button type="primary" @click="openDir(form.modsDir)">打开</el-button>
+            <el-button type="primary" @click="openDir(gameMod.mods_store_path)">打开</el-button>
+          </el-col>
+        </el-form-item>
+
+        <el-form-item label="临时缓存目录" prop="mods_temp_cache_path">
+          <el-col :span="18">
+            <el-input v-model.trim="gameMod.mods_temp_cache_path" />
+          </el-col>
+          <el-col :span="2" :offset="1">
+            <el-button type="primary" @click="onModsTempSelect">选择</el-button>
+          </el-col>
+          <el-col :span="2" :offset="1">
+            <el-button type="primary" @click="openDir(gameMod.mods_temp_cache_path)">打开</el-button>
           </el-col>
         </el-form-item>
 
         <el-form-item>
-          <el-button type="primary" @click="onSubmit(modFormRef)">保存</el-button>
-          <!-- <el-button @click="resetSubmit(modFormRef)">重置</el-button> -->
+          <el-button type="primary" @click="onSubmit(gameModFormRef, 'game_mod')">保存</el-button>
+          <!-- <el-button @click="resetSubmit(gameModFormRef)">重置</el-button> -->
 
         </el-form-item>
       </el-form>
@@ -56,7 +68,7 @@
         </el-col>
       </el-row>
 
-      <el-form :model="keyboard" label-width="150px" style="max-width: 760px" label-position="left"
+      <el-form :model="keyboard" label-width="150px" style="max-width: 760px" label-position="right"
         ref="keyboardFormRef" :rules="keyboardFormRules">
         <el-form-item label="唤起/隐藏按键" prop="shortcut">
           <el-col :span="18">
@@ -100,9 +112,53 @@
         </el-form-item>
 
         <el-form-item>
-          <el-button type="primary" @click="onSubmit(keyboardFormRef)">保存</el-button>
+          <el-button type="primary" @click="onSubmit(keyboardFormRef, 'keyboard')">保存</el-button>
           <el-button @click="resetSubmit(keyboardFormRef)">重置</el-button>
 
+        </el-form-item>
+      </el-form>
+
+      <el-row>
+        <el-col :span="24">
+          <div class="title">便捷短语</div>
+        </el-col>
+      </el-row>
+
+      <el-form :model="quicklyChat" label-width="150px" style="max-width: 760px" label-position="right"
+        ref="quicklyChatFormRef" :rules="quicklyChatFormRules">
+        <el-form-item label="唤起/隐藏按键" prop="shortcut">
+          <el-col :span="18">
+            <el-input v-model.trim="quicklyChat.shortcut" disabled />
+          </el-col>
+          <!-- <el-col :span="2" :offset="1">
+            <el-button type="primary" @click="openDir(form.configDir)">打开</el-button>
+          </el-col> -->
+        </el-form-item>
+        <el-form-item label="窗口宽高w-h" required>
+          <el-col :span="8">
+            <el-form-item prop="width">
+              <el-input v-model="quicklyChat.width" clearable inputmode="decimal" />
+            </el-form-item>
+          </el-col>
+          <el-col class="text-center" :span="2">
+            <span class="text-gray-500">-</span>
+          </el-col>
+          <el-col :span="8">
+            <el-form-item prop="height">
+              <el-input v-model.trim="quicklyChat.height" clearable inputmode="decimal" />
+            </el-form-item>
+          </el-col>
+        </el-form-item>
+
+        <el-form-item :label="`短语 ${index + 1}：`" v-for="(key, index) in chatKeys" :key="index" :prop="`chat.${key}`">
+          <el-col :span="18">
+            <el-input v-model.trim="quicklyChat['chat'][key]" clearable />
+          </el-col>
+        </el-form-item>
+
+        <el-form-item>
+          <el-button type="primary" @click="onSubmit(quicklyChatFormRef, 'quickly_chat')">保存</el-button>
+          <el-button @click="resetSubmit(quicklyChatFormRef)">重置</el-button>
         </el-form-item>
       </el-form>
 
@@ -118,14 +174,17 @@ import { open, save } from '@tauri-apps/plugin-dialog';
 import { invoke } from '@tauri-apps/api/core';
 import { appConfigDir, appDataDir, homeDir, join } from '@tauri-apps/api/path';
 import { exists, mkdir, create, readTextFile, writeTextFile, BaseDirectory } from '@tauri-apps/plugin-fs';
+import { Store } from '@tauri-apps/plugin-store'
 
-const modFormRef = ref();
+const gameModFormRef = ref();
 const keyboardFormRef = ref();
+const quicklyChatFormRef = ref();
 
-const form = reactive({
-  configDir: '',
-  gameDataDir: '',
-  modsDir: ''
+const gameMod = reactive({
+  app_config_path: '',
+  game_data_path: '',
+  mods_store_path: '',
+  mods_temp_cache_path: ''
 })
 
 const keyboard = reactive({
@@ -136,16 +195,59 @@ const keyboard = reactive({
   y: '960.0',
 })
 
+const quicklyChat = reactive({
+  shortcut: "ctrl + p",
+  width: "800.0",
+  height: "600.0",
+  chat: {
+    chat1: '你好！',
+    chat2: '再见！',
+    chat3: 'Ciallo～(∠・ω< )⌒☆',
+    chat4: '',
+    chat5: '',
+    chat6: '',
+    chat7: '',
+    chat8: '',
+    chat9: '',
+  }
+})
+const chatKeys = ['chat1', 'chat2', 'chat3', 'chat4', 'chat5', 'chat6', 'chat7', 'chat8', 'chat9']
 
-const modFormRules = reactive({
-  configDir: [
-    { required: true, message: '请选择配置目录', trigger: 'blur' }
+
+const gameModFormRules = reactive({
+  app_config_path: [
+    { required: true, message: '请选择软件配置目录', trigger: 'blur' }
   ],
-  gameDataDir: [
+  game_data_path: [
     { required: true, message: '请选择游戏Data目录', trigger: 'blur' }
   ],
-  modsDir: [
+  mods_store_path: [
     { required: true, message: '请选择Mod存档目录', trigger: 'blur' }
+  ],
+  mods_temp_cache_path: [
+    { required: true, message: '请选择临时缓存目录', trigger: 'blur' }
+  ],
+})
+
+const quicklyChatFormRules = reactive({
+  shortcut: [
+    { required: true, message: '请绑定快捷键', trigger: 'blur' }
+  ],
+  width: [
+    { required: true, message: '请输入窗口宽度', trigger: 'blur' },
+    {
+      pattern: /^(0|[1-9]\d*)\.\d$/,
+      message: '必须是带一位小数的数字（如 1.0）',
+      trigger: 'blur',
+    }
+  ],
+  height: [
+    { required: true, message: '请输入窗口高度', trigger: 'blur' },
+    {
+      pattern: /^(0|[1-9]\d*)\.\d$/,
+      message: '必须是带一位小数的数字（如 1.0）',
+      trigger: 'blur',
+    }
   ],
 })
 
@@ -194,64 +296,37 @@ onMounted(async () => {
     background: 'rgba(0, 0, 0, 0.7)',
   })
   try {
-    const currentPlatform = platform();
-    console.log('当前环境是 ', currentPlatform);
+    const store = await Store.load('config.json', { autoSave: false })
 
-    // 获取APP配置目录的完整路径
-    const appConfigDirPath = await appConfigDir();
-    // const appDataDirPath = await appDataDir();
-    // const homeDirPath = await homeDir();
-    form.configDir = appConfigDirPath;
-    // console.log('appConfigDir, appDataDir, homeDir Directory:', appConfigDirPath, appDataDirPath, homeDirPath);
-
-    // 不存在配置目录则去创建
-    const appConfigDirExists = await exists('', {
-      baseDir: BaseDirectory.AppConfig,
-    });
-    // console.log('---appConfigDirExists---', appConfigDirExists);
-    if (!appConfigDirExists) {
-      await mkdir('', { baseDir: BaseDirectory.AppConfig })
-    }
-
-    // 不存在配置文件则去创建
-    const flag = await exists('config.json', { baseDir: BaseDirectory.AppConfig });
-    if (!flag) {
-      // 使用join拼接目录可以抹平平台差异
-      let modsDir = await join(appConfigDirPath, 'mods');
-
-      const modsDirExists = await exists('mods', {
-        baseDir: BaseDirectory.AppConfig,
-      });
-      if (!modsDirExists) {
-        await mkdir('mods', { baseDir: BaseDirectory.AppConfig })
+    const storeGameMod = await store.get('game_mod');
+    console.log(storeGameMod);
+    if (storeGameMod) {
+      for (const [key, value] of Object.entries(gameMod)) {
+        gameMod[key] = storeGameMod[key] || value;
       }
-
-      const file = await create('config.json', { baseDir: BaseDirectory.AppData });
-      await file.write(new TextEncoder().encode(JSON.stringify({ gameDataDir: '', modsDir })));
-      await file.close();
-
-      form.modsDir = modsDir;
-      return;
     }
-    const contents = await readTextFile('config.json', {
-      baseDir: BaseDirectory.AppConfig,
-    });
 
-    if (contents) {
-      const config = JSON.parse(contents);
-      form.gameDataDir = config.gameDataDir || '';
-      form.modsDir = config.modsDir || '';
+    const storeKeyboard = await store.get('keyboard');
+    console.log(storeKeyboard);
+    if (storeKeyboard) {
+      for (const [key, value] of Object.entries(keyboard)) {
+        keyboard[key] = storeKeyboard[key] || value;
+      }
+    }
 
-      keyboard.shortcut = config.keyboard_shortcut || keyboard.shortcut;
-      keyboard.width = config.keyboard_width || keyboard.width;
-      keyboard.height = config.keyboard_height || keyboard.height;
-      keyboard.x = config.keyboard_x || keyboard.x;
-      keyboard.y = config.keyboard_y || keyboard.y;
+
+    const storeQuicklyChat = await store.get('quickly_chat');
+    console.log(storeQuicklyChat);
+
+    if (storeQuicklyChat) {
+      for (const [key, value] of Object.entries(quicklyChat)) {
+        quicklyChat[key] = storeQuicklyChat[key] || value;
+      }
     }
 
   } catch (error) {
-    console.error('配置文件初始化失败:', error);
-    ElMessage.error(error || '配置文件初始化失败')
+    console.error('获取配置文件失败:', error);
+    ElMessage.error(error || '获取配置文件失败')
 
   } finally {
     loading.close();
@@ -282,7 +357,7 @@ const onSelect = async () => {
     title: "请选择游戏里的Mods安装目录",
   });
   if (selectedPath) {
-    form.gameDataDir = selectedPath;
+    gameMod.game_data_path = selectedPath;
   }
 
 }
@@ -291,44 +366,63 @@ const onModsSelect = async () => {
   const selectedPath = await open({
     multiple: false,
     directory: true,
-    title: "请选择Mods存档目录",
+    title: "请选择Mod存档目录",
   });
   if (selectedPath) {
-    form.modsDir = selectedPath;
+    gameMod.mods_store_path = selectedPath;
   }
 
 }
 
-const onSubmit = async (formEl) => {
+const onModsTempSelect = async () => {
+  const selectedPath = await open({
+    multiple: false,
+    directory: true,
+    title: "请选择临时缓存目录",
+  });
+  if (selectedPath) {
+    gameMod.mods_temp_cache_path = selectedPath;
+  }
+
+}
+
+
+const onSubmit = async (formEl, formType) => {
   if (!formEl) return
   await formEl.validate(async (valid, fields) => {
     if (valid) {
-      const { gameDataDir, modsDir } = form;
-      const { width, height, x, y } = keyboard;
+      console.log(valid);
+      console.log(formType);
+      // return;
       try {
-        const contents = JSON.stringify({
-          gameDataDir,
-          modsDir,
-          keyboard_width: width,
-          keyboard_height: height,
-          keyboard_x: x,
-          keyboard_y: y
-        });
-        await writeTextFile('config.json', contents, {
-          baseDir: BaseDirectory.AppConfig,
-        });
+
+        const store = await Store.load('config.json', { autoSave: false })
+
+        if (formType == 'game_mod') {
+          await store.set('game_mod', gameMod);
+
+        } else if (formType == 'keyboard') {
+          await store.set('keyboard', keyboard);
+          // 关闭窗口是为了让最新配置生效
+          await invoke('close_webview_window', { label: 'keyboard' });
+
+        } else if (formType == 'quickly_chat') {
+          await store.set('quickly_chat', quicklyChat);
+          // 关闭窗口是为了让最新配置生效
+          await invoke('close_webview_window', { label: 'quickly-chat' });
+
+        }
+
+        await store.save();
 
         ElMessage({
           message: '保存成功',
           type: 'success',
         })
 
-        await invoke('close_webview_window', { label: 'keyboard' });
-
-
       } catch (error) {
-        console.error('配置文件写入失败:', error);
-        ElMessage.error(error || '保存失败')
+        console.error('配置文件保存失败:', error);
+        ElMessage.error(error || '配置文件保存失败')
 
       }
     } else {

@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use tauri::{AppHandle, Manager, Result};
+use tauri::{AppHandle, Manager};
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct WebviewWindowParams {
@@ -62,9 +62,11 @@ pub async fn create_webview_window(app_handle: AppHandle, params: WebviewWindowP
 
 // 隐藏窗口
 #[tauri::command()]
-pub fn hide_webview_window(app: AppHandle, label: &str) -> Result<()> {
+pub fn hide_webview_window(app: AppHandle, label: &str) -> Result<(), String> {
     if let Some(webview_window) = app.get_webview_window(label) {
-        webview_window.hide()?;
+        webview_window
+            .hide()
+            .map_err(|e| format!("窗口隐藏失败: {}", e))?;
         println!("窗口 {} 已隐藏", label);
     } else {
         println!("未找到窗口：{}", label);
@@ -75,9 +77,11 @@ pub fn hide_webview_window(app: AppHandle, label: &str) -> Result<()> {
 // 关闭窗口
 #[allow(dead_code)]
 #[tauri::command()]
-pub fn close_webview_window(app: AppHandle, label: &str) -> Result<()> {
+pub fn close_webview_window(app: AppHandle, label: &str) -> Result<(), String> {
     if let Some(webview_window) = app.get_webview_window(label) {
-        webview_window.close()?;
+        webview_window
+            .close()
+            .map_err(|e| format!("窗口关闭失败: {}", e))?;
         println!("窗口 {} 已关闭", label);
     } else {
         println!("未找到窗口：{}", label);

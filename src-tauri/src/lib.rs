@@ -1,14 +1,15 @@
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
+mod config;
 mod db;
 mod fs;
 mod keyboard;
 mod window;
-mod config;
 
+use crate::config as my_config;
 use crate::db as my_db;
 use crate::fs as my_fs;
-use crate::window as my_window;
 use crate::keyboard as my_keyboard;
+use crate::window as my_window;
 
 #[tauri::command]
 fn greet(name: &str) -> String {
@@ -36,15 +37,10 @@ fn my_custom_command() -> i32 {
 //     }
 // }
 
-fn init_database() -> tauri::Result<()> {
-    my_db::create_db_table_if_not_exists()?;
-    println!("init_database数据库初始化！");
-    Ok(())
-}
-
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_store::Builder::default().build())
         .plugin(tauri_plugin_http::init())
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_os::init())
@@ -73,10 +69,17 @@ pub fn run() {
         .setup(|app| {
             println!("Tauri 初始化逻辑执行！");
 
-            // let app_handle = app.handle().clone();
-            // config::load_config(app_handle)?;
+            let app_identifier = app.config().identifier.clone();
+            println!("app_identifier值是 {}", app_identifier);
+            my_config::set_identifier(app_identifier);
+
+            let app_handle_clone = app.handle();
+            my_config::initialization_config_json(app_handle_clone)?;
+
             // 数据库初始化
-            init_database()?;
+            my_db::init_database()?;
+
+
 
             // 注册快捷键
             let register_status = my_keyboard::register_global_shortcut(app);
@@ -96,24 +99,7 @@ pub fn run() {
             if label == "keyboard" {
                 match event {
                     tauri::WindowEvent::Destroyed { .. } => {
-                        // 你想执行的逻辑，比如释放资源、发事件等
                         println!("{} 窗口已关闭", label);
-                        // enigo.key(Key::Return, Click).unwrap();
-                        // enigo.text("\n").unwrap();
-
-                        // 获取全局 AppHandle
-                        // let app_handle = window.app_handle();
-                        // // 访问共享状态
-                        // if let Some(state) = app_handle.try_state::<Arc<Mutex<KeyboardInput>>>() {
-                        //     let text = state.lock().unwrap().text.clone();
-                        //     println!("当前共享数据为: {}", text);
-
-                        //     thread::sleep(Duration::from_millis(200));
-                        //     let mut enigo = Enigo::new(&Settings::default()).unwrap();
-                        //     enigo.text(&text).unwrap();
-                        //     thread::sleep(Duration::from_millis(200));
-                        //     enigo.key(Key::Return, Click).unwrap();
-                        // }
                     }
                     _ => {}
                 }

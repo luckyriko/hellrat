@@ -52,6 +52,11 @@ const router = createRouter({
       name: 'keyboard',
       component: () => import('../views/KeyboardView.vue'),
     },
+    {
+      path: '/quickly-chat',
+      name: 'quickly-chat',
+      component: () => import('../views/QuicklyChatView.vue'),
+    },
 
 
   ],

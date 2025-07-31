@@ -2,5 +2,5 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 fn main() {
-    helldivers2_mods_manager_lib::run()
+    hellrat_lib::run()
 }

@@ -1,11 +1,12 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
-  "description": "Capability for some window",
+  "description": "Capability for windows",
   "windows": [
     "main",
     "upload",
-    "keyboard"
+    "keyboard",
+    "quickly-chat"
   ],
   "permissions": [
     "core:default",
@@ -38,9 +39,14 @@
     "global-shortcut:allow-is-registered",
     "global-shortcut:allow-register",
     "global-shortcut:allow-unregister",
+    "store:default",
     {
       "identifier": "http:default",
-      "allow": [{ "url": "https://api.luckyriko.com/app/*" }],
+      "allow": [
+        {
+          "url": "https://api.luckyriko.com/app/*"
+        }
+      ],
       "deny": []
     }
   ]

@@ -1,5 +1,5 @@
 {
-  "name": "helldivers2-mods-manager",
+  "name": "hellrat",
   "author": "luckyriko<luckyriko@qq.com>",
   "private": true,
   "version": "1.0.0",
@@ -19,6 +19,7 @@
     "@tauri-apps/plugin-opener": "^2",
     "@tauri-apps/plugin-os": "~2",
     "@tauri-apps/plugin-shell": "~2.2.0",
+    "@tauri-apps/plugin-store": "~2",
     "element-plus": "^2.9.3",
     "pinia": "^2.3.1",
     "semver": "^7.7.1",

@@ -19,7 +19,7 @@ async function confirmInput() {
     await getCurrentWebviewWindow().hide();
     return;
   }
-  await invoke('confirm_input', { text: text.value });
+  await invoke('confirm_input', { text: text.value, label: 'keyboard' });
   text.value = '';
 }
 

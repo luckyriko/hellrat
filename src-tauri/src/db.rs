@@ -1,6 +1,7 @@
-use rusqlite::{params, params_from_iter, Connection, ToSql};
+use rusqlite::{Connection, ToSql, params, params_from_iter};
 extern crate dirs;
-use anyhow::{anyhow, Context, Result};
+use crate::config as my_config;
+use anyhow::{Context, Result, anyhow};
 use serde::{Deserialize, Serialize};
 use std::fs;
 
@@ -56,11 +57,7 @@ pub fn check_mod_name(name: &str) -> Result<bool, String> {
         .map_err(|e| format!("查询是否有重复名称失败: {}", e))?;
 
     // println!("count:{}", count);
-    if count == 0 {
-        Ok(true)
-    } else {
-        Ok(false)
-    }
+    if count == 0 { Ok(true) } else { Ok(false) }
 }
 
 #[derive(Serialize)]
@@ -291,6 +288,12 @@ pub fn add_mod(game_mod: GameModData) -> Result<()> {
     Ok(())
 }
 
+pub fn init_database() -> tauri::Result<()> {
+    create_db_table_if_not_exists()?;
+    println!("init_database数据库初始化！");
+    Ok(())
+}
+
 pub fn create_db_table_if_not_exists() -> Result<()> {
     let conn = open_data_db()?;
 
@@ -310,13 +313,50 @@ pub fn create_db_table_if_not_exists() -> Result<()> {
         (),
     )?;
 
-    // 已安装mods文件记录表，install_id用于表明哪些文件属于哪条记录
+    // 游戏已安装mod文件记录，可查看游戏里的文件对应哪个mod；record_id关联mods_records表的id
     conn.execute(
         "CREATE TABLE IF NOT EXISTS mods_install_files (
+            id          INTEGER PRIMARY KEY AUTOINCREMENT,
             record_id   INTEGER NOT NULL,
+            env_id      INTEGER NOT NULL,
             file        TEXT NOT NULL
 
     )",
+        (),
+    )?;
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_record_id_env_id ON mods_install_files(record_id, env_id)",
+        (),
+    )?;
+
+    // 环境切换：用于快速切换不同环境下的mod状态
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS environment_active_mods (
+            id          INTEGER PRIMARY KEY AUTOINCREMENT,
+            record_id   INTEGER NOT NULL,
+            env_id      INTEGER NOT NULL
+        )",
+        (),
+    )?;
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_record_id_env_id ON environment_active_mods(record_id, env_id)",
+        (),
+    )?;
+
+    // 环境列表
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS environment_lists (
+            id          INTEGER PRIMARY KEY AUTOINCREMENT,
+            name        TEXT NOT NULL
+        )",
+        (),
+    )?;
+    conn.execute(
+        "CREATE UNIQUE INDEX IF NOT EXISTS idx_unique_name ON environment_lists(name);",
+        (),
+    )?;
+    conn.execute(
+        "INSERT OR IGNORE INTO environment_lists(name) VALUES('default');",
         (),
     )?;
 
@@ -324,11 +364,14 @@ pub fn create_db_table_if_not_exists() -> Result<()> {
 }
 
 pub fn open_data_db() -> Result<Connection> {
-    // let platform = tauri_plugin_os::platform();
-    // println!("Platform: {}", platform);
+    // v1 com.luckyriko.helldivers2
+    // v2 com.luckyriko.hellrat
+
+    let app_identifier = my_config::get_identifier().unwrap_or("666".into());
+    println!("db.rs: app_identifier值是 {}", app_identifier);
 
     if let Some(mut db_path) = dirs::config_dir() {
-        db_path.push("com.luckyriko.helldivers2");
+        db_path.push(app_identifier);
         db_path.push("db");
         let path = db_path.to_string_lossy().to_string();
 
