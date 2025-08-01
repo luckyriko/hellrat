@@ -1,12 +1,11 @@
-use anyhow::{Context, Result};
+use anyhow::{Result};
 use once_cell::sync::OnceCell;
-use serde::{Deserialize, Serialize};
-use serde_json::json;
+use serde_json::{json, Value};
 use std::fs;
 use std::path::PathBuf;
 use std::sync::Mutex;
 use tauri::AppHandle;
-use tauri::{Manager, path::BaseDirectory};
+use tauri::{Manager};
 use tauri_plugin_store::StoreExt;
 
 // 全局变量，存储 identifier
@@ -21,45 +20,30 @@ pub fn get_identifier() -> Option<String> {
     IDENTIFIER.get().map(|m| m.lock().unwrap().clone())
 }
 
-#[derive(Debug, Serialize, Deserialize)]
-pub struct AppConfig {
-    pub gameDataDir: String,
-    pub modsDir: String,
-    pub keyboard_width: String,
-    pub keyboard_height: String,
-    pub keyboard_x: String,
-    pub keyboard_y: String,
+// 手动解析配置文件
+// pub fn get_app_config_json(app: &AppHandle) -> Result<Value> {
+//     // 获取配置路径：例如 C:\Users\用户名\AppData\Roaming\MyApp\config.json
+//     let config_path = app.path().resolve("config.json", BaseDirectory::AppData)?;
+//     // println!("配置路径：{:?}", config_path);
+
+//     // 读取文件内容
+//     let content = fs::read_to_string(&config_path)
+//         .with_context(|| format!("读取配置文件失败: {:?}", config_path))?;
+
+//     // 解析为结构体
+//     let config = serde_json::from_str(&content).context("配置文件格式错误")?;
+//     // println!("{:?}", config);
+
+//     Ok(config)
+// }
+
+pub fn get_app_config_json(app: &AppHandle, key: String) -> Result<Value> {
+    let store = app.store("config.json")?;
+    let json_value = store.get(key).unwrap_or(json!({}));
+    println!("{}", json_value);
+    Ok(json_value)
 }
 
-impl Default for AppConfig {
-    fn default() -> Self {
-        AppConfig {
-            gameDataDir: "".into(),
-            modsDir: "".into(),
-            keyboard_width: "340.0".into(),
-            keyboard_height: "40.0".into(),
-            keyboard_x: "1335.0".into(),
-            keyboard_y: "960.0".into(),
-        }
-    }
-}
-// AppConfig
-pub fn get_app_config(app: &AppHandle) -> Result<AppConfig> {
-    // 获取配置路径：例如 C:\Users\用户名\AppData\Roaming\MyApp\config.json
-    let config_path = app.path().resolve("config.json", BaseDirectory::AppData)?;
-
-    // println!("配置路径：{:?}", config_path);
-
-    // 读取文件内容
-    let content = fs::read_to_string(&config_path)
-        .with_context(|| format!("读取配置文件失败: {:?}", config_path))?;
-
-    // 解析为结构体
-    let config: AppConfig = serde_json::from_str(&content).context("配置文件格式错误")?;
-    // println!("{:?}", config);
-
-    Ok(config)
-}
 
 pub fn get_app_config_path(app: &AppHandle) -> Option<PathBuf> {
     app.path().app_config_dir().ok()
@@ -140,8 +124,6 @@ pub fn initialization_config_json(app: &AppHandle) -> Result<()> {
             }),
         );
     }
-
-    // store.close_resource();
-
+    
     Ok(())
 }

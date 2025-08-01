@@ -2,6 +2,8 @@ use crate::config as my_config;
 use crate::window as my_window;
 use anyhow::anyhow;
 use once_cell::sync::Lazy;
+use serde_json::json;
+use std::default;
 use std::sync::Mutex;
 use std::thread::sleep;
 use std::time::Duration;
@@ -73,6 +75,12 @@ pub fn press_enter() -> Result<(), String> {
     Ok(())
 }
 
+fn extract_f64(val: &serde_json::Value, key: &str, default: f64) -> f64 {
+    val.get(key)
+        .and_then(|v| v.as_f64().or_else(|| v.as_str()?.parse::<f64>().ok()))
+        .unwrap_or(default)
+}
+
 // 注册全局快捷键
 pub fn register_global_shortcut(app: &mut tauri::App) -> tauri::Result<()> {
     #[cfg(desktop)]
@@ -82,7 +90,7 @@ pub fn register_global_shortcut(app: &mut tauri::App) -> tauri::Result<()> {
         };
 
         let ctrl_space_shortcut = Shortcut::new(Some(Modifiers::CONTROL), Code::Space);
-        let ctrl_slash_shortcut = Shortcut::new(Some(Modifiers::CONTROL), Code::KeyP);
+        let ctrl_p_shortcut = Shortcut::new(Some(Modifiers::CONTROL), Code::KeyP);
 
         app.handle().plugin(
             tauri_plugin_global_shortcut::Builder::new()
@@ -119,28 +127,24 @@ pub fn register_global_shortcut(app: &mut tauri::App) -> tauri::Result<()> {
                                     }
                                 }
                             } else {
-                                let app_handle_clone = app_handle.clone();
+                                let keyboard_json =
+                                    my_config::get_app_config_json(app_handle, "keyboard".into())
+                                        .unwrap_or(json!({}));
+                                let width = extract_f64(&keyboard_json, "width", 340.0);
+                                let height = extract_f64(&keyboard_json, "height", 40.0);
+                                let x = extract_f64(&keyboard_json, "x", 1335.0);
+                                let y = extract_f64(&keyboard_json, "y", 960.0);
 
-                                let my_config = my_config::get_app_config(app_handle)
-                                    .unwrap_or_else(|err| {
-                                        eprintln!("读取配置失败，使用默认值: {:?}", err);
-                                        my_config::AppConfig::default()
-                                    });
+                                let app_handle_clone = app_handle.clone();
 
                                 // 创建异步任务：如果输入框不存在则去创建该窗口并聚焦
                                 tauri::async_runtime::spawn(async move {
                                     let params = my_window::WebviewWindowParams {
                                         label: "keyboard".into(),
-                                        width: my_config
-                                            .keyboard_width
-                                            .parse::<f64>()
-                                            .unwrap_or(340.0),
-                                        height: my_config
-                                            .keyboard_height
-                                            .parse::<f64>()
-                                            .unwrap_or(40.0),
-                                        x: my_config.keyboard_x.parse::<f64>().unwrap_or(1335.0),
-                                        y: my_config.keyboard_y.parse::<f64>().unwrap_or(960.0),
+                                        width,
+                                        height,
+                                        x,
+                                        y,
                                         decorations: false,
                                         transparent: true,
                                         shadow: false,
@@ -155,7 +159,7 @@ pub fn register_global_shortcut(app: &mut tauri::App) -> tauri::Result<()> {
                             }
                         }
 
-                        if shortcut == &ctrl_slash_shortcut {
+                        if shortcut == &ctrl_p_shortcut {
                             println!("ctrl_slash Released!");
                             if let Some(webview_window) =
                                 app_handle.get_webview_window("quickly-chat")
@@ -182,6 +186,14 @@ pub fn register_global_shortcut(app: &mut tauri::App) -> tauri::Result<()> {
                                     }
                                 }
                             } else {
+                                let quickly_chat_json = my_config::get_app_config_json(
+                                    app_handle,
+                                    "quickly_chat".into(),
+                                )
+                                .unwrap_or(json!({}));
+                                let width = extract_f64(&quickly_chat_json, "width", 800.0);
+                                let height = extract_f64(&quickly_chat_json, "height", 600.0);
+
                                 let app_handle_clone = app_handle.clone();
 
                                 // 创建异步任务：如果输入框不存在则去创建该窗口并聚焦
@@ -196,7 +208,7 @@ pub fn register_global_shortcut(app: &mut tauri::App) -> tauri::Result<()> {
                                         .transparent(true) // 窗口背景透明
                                         .shadow(true)
                                         .always_on_top(true)
-                                        .inner_size(800.0, 600.0)
+                                        .inner_size(width, height)
                                         .center()
                                         .build()
                                         .unwrap();
@@ -217,12 +229,12 @@ pub fn register_global_shortcut(app: &mut tauri::App) -> tauri::Result<()> {
             .unregister_all()
             .map_err(|e| anyhow!("取消所有快捷键注册失败: {}", e))?;
 
-        if !app.global_shortcut().is_registered(ctrl_slash_shortcut) {
+        if !app.global_shortcut().is_registered(ctrl_p_shortcut) {
             app.global_shortcut()
-                .register(ctrl_slash_shortcut)
+                .register(ctrl_p_shortcut)
                 .map_err(|e| anyhow!("注册快捷键2失败: {}", e))?;
         } else {
-            println!("{}该快捷键2已经注册过了", ctrl_slash_shortcut);
+            println!("{}该快捷键2已经注册过了", ctrl_p_shortcut);
         }
 
         if !app.global_shortcut().is_registered(ctrl_space_shortcut) {
