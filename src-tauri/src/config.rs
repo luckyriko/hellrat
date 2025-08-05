@@ -92,7 +92,9 @@ pub fn initialization_config_json(app: &AppHandle) -> Result<()> {
         store.set(
             "keyboard",
             json!({
+                "flag": true,
                 "shortcut": "ctrl + space",
+                "typing_interval": "10",
                 "width": "340.0",
                 "height": "40.0",
                 "x": "1335.0",
@@ -106,7 +108,9 @@ pub fn initialization_config_json(app: &AppHandle) -> Result<()> {
         store.set(
             "quickly_chat",
             json!({
+                "flag": true,
                 "shortcut": "ctrl + p",
+                "typing_interval": "10",
                 "width": "800.0",
                 "height": "600.0",
                 "chat":{

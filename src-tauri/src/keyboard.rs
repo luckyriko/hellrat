@@ -3,7 +3,6 @@ use crate::window as my_window;
 use anyhow::anyhow;
 use once_cell::sync::Lazy;
 use serde_json::json;
-use std::default;
 use std::sync::Mutex;
 use std::thread::sleep;
 use std::time::Duration;
@@ -18,12 +17,19 @@ static ENIGO: Lazy<Mutex<Enigo>> =
 
 #[tauri::command]
 pub fn confirm_input(app: AppHandle, text: String, label: String) -> Result<(), String> {
+    let app_handle_clone = app.clone();
     // 隐藏窗口
-    my_window::hide_webview_window(app, &label)?;
+    my_window::hide_webview_window(app_handle_clone, &label)?;
     sleep(Duration::from_millis(250));
 
+    let config_label = label.replace("-", "_");
+    let config_json = my_config::get_app_config_json(&app, config_label).unwrap_or(json!({
+        "typing_interval": "10"
+    }));
+    let typing_interval = extract_u64(&config_json, "typing_interval", 10);
+
     // let mut enigo: Enigo = Enigo::new(&Settings::default()).map_err(|e| format!("Enigo初始化失败: {}", e))?;
-    let mut enigo = ENIGO
+    let mut enigo: std::sync::MutexGuard<'_, Enigo> = ENIGO
         .lock()
         .map_err(|e| format!("Enigo实例获取失败: {}", e))?;
 
@@ -37,16 +43,19 @@ pub fn confirm_input(app: AppHandle, text: String, label: String) -> Result<(), 
         .map_err(|e| format!("模拟回车抬起失败: {}", e))?;
     sleep(Duration::from_millis(50));
 
-    // 直接输入前端传来的文字
-    // enigo.text(&text).map_err(|e| format!("模拟文字输入失败: {}", e))?;
-    // sleep(Duration::from_millis(250)).await;
-
-    // 有节奏的输入：每个字符间隔10ms
-    for ch in text.chars() {
+    if typing_interval == 0 {        
+        // 直接输入文字
         enigo
-            .text(&ch.to_string())
+            .text(&text)
             .map_err(|e| format!("模拟文字输入失败: {}", e))?;
-        sleep(Duration::from_millis(10));
+    } else {
+        // 有节奏的输入：每个字符间隔10ms，以确保不会吞字
+        for ch in text.chars() {
+            enigo
+                .text(&ch.to_string())
+                .map_err(|e| format!("模拟文字输入失败: {}", e))?;
+            sleep(Duration::from_millis(typing_interval));
+        }
     }
 
     // 模拟回车发送文字
@@ -78,6 +87,12 @@ pub fn press_enter() -> Result<(), String> {
 fn extract_f64(val: &serde_json::Value, key: &str, default: f64) -> f64 {
     val.get(key)
         .and_then(|v| v.as_f64().or_else(|| v.as_str()?.parse::<f64>().ok()))
+        .unwrap_or(default)
+}
+
+fn extract_u64(val: &serde_json::Value, key: &str, default: u64) -> u64 {
+    val.get(key)
+        .and_then(|v| v.as_u64().or_else(|| v.as_str()?.parse::<u64>().ok()))
         .unwrap_or(default)
 }
 
@@ -192,7 +207,7 @@ pub fn register_global_shortcut(app: &mut tauri::App) -> tauri::Result<()> {
                                 )
                                 .unwrap_or(json!({}));
                                 let width = extract_f64(&quickly_chat_json, "width", 800.0);
-                                let height = extract_f64(&quickly_chat_json, "height", 600.0);
+                                let height: f64 = extract_f64(&quickly_chat_json, "height", 600.0);
 
                                 let app_handle_clone = app_handle.clone();
 
@@ -229,20 +244,28 @@ pub fn register_global_shortcut(app: &mut tauri::App) -> tauri::Result<()> {
             .unregister_all()
             .map_err(|e| anyhow!("取消所有快捷键注册失败: {}", e))?;
 
-        if !app.global_shortcut().is_registered(ctrl_p_shortcut) {
-            app.global_shortcut()
-                .register(ctrl_p_shortcut)
-                .map_err(|e| anyhow!("注册快捷键2失败: {}", e))?;
-        } else {
-            println!("{}该快捷键2已经注册过了", ctrl_p_shortcut);
-        }
+        let keyboard_json =
+            my_config::get_app_config_json(app.handle(), "keyboard".into()).unwrap_or(json!({}));
+        let keyboard_flag = keyboard_json.get("flag").and_then(|v| v.as_bool()).unwrap_or(false);
 
-        if !app.global_shortcut().is_registered(ctrl_space_shortcut) {
+        if !app.global_shortcut().is_registered(ctrl_space_shortcut) && keyboard_flag {
             app.global_shortcut()
                 .register(ctrl_space_shortcut)
                 .map_err(|e| anyhow!("注册快捷键1失败: {}", e))?;
         } else {
-            println!("{}该快捷键1已经注册过了", ctrl_space_shortcut);
+            println!("{}该快捷键1已经注册过了/已关闭注册", ctrl_space_shortcut);
+        }
+
+        let quickly_chat_json =
+            my_config::get_app_config_json(app.handle(), "quickly_chat".into()).unwrap_or(json!({}));
+        let quickly_chat_flag = quickly_chat_json.get("flag").and_then(|v| v.as_bool()).unwrap_or(false);
+
+        if !app.global_shortcut().is_registered(ctrl_p_shortcut) && quickly_chat_flag {
+            app.global_shortcut()
+                .register(ctrl_p_shortcut)
+                .map_err(|e| anyhow!("注册快捷键2失败: {}", e))?;
+        } else {
+            println!("{}该快捷键2已经注册过了/已关闭注册", ctrl_p_shortcut);
         }
     }
 

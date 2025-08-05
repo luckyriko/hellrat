@@ -64,12 +64,21 @@
 
       <el-row>
         <el-col :span="24">
-          <div class="title">输入设置</div>
+          <div class="title">弹窗输入</div>
         </el-col>
       </el-row>
 
       <el-form :model="keyboard" label-width="150px" style="max-width: 760px" label-position="right"
         ref="keyboardFormRef" :rules="keyboardFormRules">
+        <el-form-item label="开启/关闭功能" required prop="flag">
+          <el-col :span="2">
+            <el-switch v-model="keyboard.flag" inline-prompt
+              style="--el-switch-on-color: #13ce66; --el-switch-off-color: #ff4949" active-text="Y" inactive-text="N" />
+          </el-col>
+          <el-col :span="10">
+            <text style="color: red; font-size: 12px;">注意：软件重启后生效</text>
+          </el-col>
+        </el-form-item>
         <el-form-item label="唤起/隐藏按键" prop="shortcut">
           <el-col :span="18">
             <el-input v-model.trim="keyboard.shortcut" disabled />
@@ -78,7 +87,11 @@
             <el-button type="primary" @click="openDir(form.configDir)">打开</el-button>
           </el-col> -->
         </el-form-item>
-
+        <el-form-item label="文字输入间隔" prop="typing_interval">
+          <el-col :span="18">
+            <el-input v-model.trim="keyboard.typing_interval" />
+          </el-col>
+        </el-form-item>
         <el-form-item label="窗口宽高w-h" required>
           <el-col :span="8">
             <el-form-item prop="width">
@@ -126,6 +139,15 @@
 
       <el-form :model="quicklyChat" label-width="150px" style="max-width: 760px" label-position="right"
         ref="quicklyChatFormRef" :rules="quicklyChatFormRules">
+        <el-form-item label="开启/关闭功能" required prop="flag">
+          <el-col :span="2">
+            <el-switch v-model="quicklyChat.flag" inline-prompt
+              style="--el-switch-on-color: #13ce66; --el-switch-off-color: #ff4949" active-text="Y" inactive-text="N" />
+          </el-col>
+          <el-col :span="10">
+            <text style="color: red; font-size: 12px;">注意：软件重启后生效</text>
+          </el-col>
+        </el-form-item>
         <el-form-item label="唤起/隐藏按键" prop="shortcut">
           <el-col :span="18">
             <el-input v-model.trim="quicklyChat.shortcut" disabled />
@@ -133,6 +155,11 @@
           <!-- <el-col :span="2" :offset="1">
             <el-button type="primary" @click="openDir(form.configDir)">打开</el-button>
           </el-col> -->
+        </el-form-item>
+        <el-form-item label="文字输入间隔" prop="typing_interval">
+          <el-col :span="18">
+            <el-input v-model.trim="quicklyChat.typing_interval" />
+          </el-col>
         </el-form-item>
         <el-form-item label="窗口宽高w-h" required>
           <el-col :span="8">
@@ -188,6 +215,8 @@ const gameMod = reactive({
 })
 
 const keyboard = reactive({
+  typing_interval: '10',
+  flag: true,
   shortcut: 'ctrl + space',
   width: '340.0',
   height: '40.0',
@@ -196,6 +225,8 @@ const keyboard = reactive({
 })
 
 const quicklyChat = reactive({
+  typing_interval: '10',
+  flag: true,
   shortcut: "ctrl + p",
   width: "800.0",
   height: "600.0",
@@ -233,6 +264,14 @@ const quicklyChatFormRules = reactive({
   shortcut: [
     { required: true, message: '请绑定快捷键', trigger: 'blur' }
   ],
+  typing_interval: [
+    { required: true, message: '请输入文字输入间隔，单位ms', trigger: 'blur' },
+    {
+      pattern: /^(0|[1-9]\d*)$/,
+      message: '必须是正整数（建议 10）',
+      trigger: 'blur',
+    }
+  ],
   width: [
     { required: true, message: '请输入窗口宽度', trigger: 'blur' },
     {
@@ -254,6 +293,14 @@ const quicklyChatFormRules = reactive({
 const keyboardFormRules = reactive({
   shortcut: [
     { required: true, message: '请绑定快捷键', trigger: 'blur' }
+  ],
+  typing_interval: [
+    { required: true, message: '请输入文字输入间隔，单位ms', trigger: 'blur' },
+    {
+      pattern: /^(0|[1-9]\d*)$/,
+      message: '必须是正整数（建议 10）',
+      trigger: 'blur',
+    }
   ],
   width: [
     { required: true, message: '请输入窗口宽度', trigger: 'blur' },
