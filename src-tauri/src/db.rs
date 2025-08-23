@@ -3,8 +3,9 @@ extern crate dirs;
 use crate::config as my_config;
 use crate::mods::{GameMod, GameModData, GameModWithEnv};
 use anyhow::{Context, Result, anyhow};
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 use std::fs;
+use std::time::{SystemTime, UNIX_EPOCH};
 
 #[tauri::command]
 pub fn db_operate_test() {}
@@ -80,6 +81,7 @@ pub struct Statistic {
     voice_total_count: u32,
 }
 
+#[allow(dead_code)]
 #[tauri::command]
 pub fn get_statistics() -> Result<Statistic, String> {
     let conn = open_data_db().map_err(|e| format!("数据库连接失败: {}", e))?;
@@ -145,7 +147,6 @@ pub fn get_environment_list() -> Result<Vec<Environment>, String> {
         })
         .filter_map(Result::ok)
         .collect();
-    println!("env: {:?}", env);
 
     Ok(env)
 }
@@ -576,14 +577,27 @@ pub fn update_mod_record_info(game_mod: &GameMod) -> Result<()> {
 
 /// 添加mod存档
 fn add_mod_record(conn: &Connection, game_mod: &GameModData) -> Result<u64> {
+    let add_time = current_timestamp("ms")?;
     conn.execute(
-        "INSERT INTO mods_records (uuid, name, path, type, author, link, desc, icon, version, options) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)",
-        (&game_mod.info.uuid, &game_mod.info.name, &game_mod.info.path, &game_mod.info.r#type, &game_mod.info.author, &game_mod.info.link, &game_mod.info.desc, &game_mod.info.icon, &game_mod.info.version, &game_mod.info.options),
+        "INSERT INTO mods_records (uuid, name, path, type, author, link, desc, icon, version, options, add_time) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        (&game_mod.info.uuid, &game_mod.info.name, &game_mod.info.path, &game_mod.info.r#type, &game_mod.info.author, &game_mod.info.link, &game_mod.info.desc, &game_mod.info.icon, &game_mod.info.version, &game_mod.info.options, add_time),
     )?;
     let last_record_id = conn.last_insert_rowid() as u64;
     // println!("last_record_id: {last_record_id}");
 
     Ok(last_record_id)
+}
+
+fn current_timestamp(unit: &str) -> Result<u64> {
+    let now = SystemTime::now();
+    let duration = now.duration_since(UNIX_EPOCH)?;
+
+    match unit {
+        "s" => Ok(duration.as_secs()),
+        "ms" => Ok(duration.as_millis() as u64),
+        "us" => Ok(duration.as_micros() as u64),
+        _ => Ok(duration.as_millis() as u64),
+    }
 }
 
 fn add_environment_mod(
@@ -654,7 +668,8 @@ pub fn add_mod_install_files(record_id: u64, env_id: u32, files: &Vec<String>) -
     Ok(())
 }
 
-pub fn update_mod(game_mod: GameModData) -> Result<()> {
+#[allow(dead_code)]
+pub fn update_mod(_game_mod: GameModData) -> Result<()> {
     let mut conn = open_data_db()?;
     let tx = conn.transaction()?;
 
@@ -800,7 +815,7 @@ pub fn open_data_db() -> Result<Connection> {
 
         // sqlite3的db文件路径
         db_path.push("data.db");
-        println!("{:?}", db_path);
+        // println!("{:?}", db_path);
 
         let path = db_path.to_string_lossy().to_string();
         let conn = Connection::open(path).context("Failed to open data.db")?;

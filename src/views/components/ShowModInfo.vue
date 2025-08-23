@@ -3,7 +3,7 @@
   <el-dialog v-model="showFlag" title="Mod详情" @close="handleClose" width="50%" top="5vh">
     <el-scrollbar max-height="78vh">
       <h3 style="margin-top: 0;">基础信息</h3>
-      <div>
+      <div style="background-color: #f0f0f0;">
         <el-image :src="image" fit="cover" style="width: 100%;" v-if="image" />
       </div>
       <div class="box" v-for="(value, key, index) in mod" :key="index">
@@ -100,7 +100,7 @@ const getPreviewPath = async (path, icon) => {
   if (props.modsStorePath && path && icon) {
     let imgPath = await join(props.modsStorePath, path, '/' + icon);
     const assetUrl = convertFileSrc(imgPath);
-    // console.log(imgPath);
+    console.log(imgPath, assetUrl);
     return assetUrl;
   } else {
     return '';

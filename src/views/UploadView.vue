@@ -13,7 +13,7 @@
     <div>
       <div class="box" v-for="(item, index) in files" :key="index">
         <div class="left">{{ index + 1 + '. ' + item.name }}</div>
-        <div class="right" :class="{ 'error': item.status == 'non-support' }">
+        <div class="right" :class="{ 'error': (item.status == 'non-support' || item.status == 're-path') }">
           {{ getStatusName(item.status) }}
         </div>
       </div>
@@ -46,6 +46,9 @@ const getStatusName = (status) => {
       break;
     case 'start':
       statusName = '已开始';
+      break;
+    case 're-path':
+      statusName = '重复保存-跳过';
       break;
     case 'copy':
       statusName = '复制ing';
@@ -124,7 +127,8 @@ async function receiveModsFilePath(paths) {
     console.log('save_mods successfully!');
   } catch (error) {
     console.error('save_mods fail:', error);
-    ElMessage.error(error || '存档失败')
+    ElMessage.error(error || '存档失败');
+    files.value = [];
 
   }
 }

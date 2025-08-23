@@ -56,7 +56,7 @@
 import { ref } from "vue";
 import { getVersion } from '@tauri-apps/api/app';
 import { open } from '@tauri-apps/plugin-shell';
-import { fetch } from "@tauri-apps/plugin-http";
+import { fetch } from '@tauri-apps/plugin-http';
 import semver from "semver";
 
 const version = ref("");
@@ -88,7 +88,10 @@ async function getUpdate() {
   }
 
   try {
-    const response = await fetch("https://api.luckyriko.com/app/getLatestVersion");
+    const response = await fetch('https://hellrat.luckyriko.com/app/getLatestVersion', {
+      method: 'GET',
+    });
+
     // console.log(response.status);  // e.g. 200
     // console.log(response.statusText); // e.g. "OK"
 

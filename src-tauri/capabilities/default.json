@@ -2,12 +2,7 @@
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
   "description": "Capability for windows",
-  "windows": [
-    "main",
-    "upload",
-    "keyboard",
-    "quickly-chat"
-  ],
+  "windows": ["main", "upload", "keyboard", "quickly-chat"],
   "permissions": [
     "core:default",
     "core:window:allow-set-fullscreen",
@@ -42,12 +37,7 @@
     "store:default",
     {
       "identifier": "http:default",
-      "allow": [
-        {
-          "url": "https://api.luckyriko.com/app/*"
-        }
-      ],
-      "deny": []
+      "allow": [{ "url": "https://*.luckyriko.com" }]
     }
   ]
 }

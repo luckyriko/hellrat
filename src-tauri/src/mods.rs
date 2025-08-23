@@ -4,11 +4,10 @@ use crate::fs as my_fs;
 use mudder::SymbolTable;
 use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
-use serde_json::{Value, json};
+use serde_json::json;
 use std::fs;
-use std::ops::Deref;
+use std::path::Path;
 use std::path::PathBuf;
-use std::{fmt::format, path::Path};
 use tauri::{AppHandle, Emitter};
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -155,7 +154,23 @@ pub fn save_mods(app: AppHandle, paths: Vec<String>, env_id: u32) -> Result<(), 
             .unwrap_or_default();
 
         let dest_path_buf = Path::new(mods_store_path).join(&file_stem);
-        println!("{:?}", dest_path_buf);
+        // println!("{:?}", dest_path_buf);
+
+        let already_install_flag = my_db::check_mod_path(&file_stem)
+            .map_err(|e| format!("检测到check_mod_path时发生了错误: {}", e))?;
+
+        println!("{} 安装状态：{}", &file_stem, already_install_flag);
+        if already_install_flag {
+            println!("已经安装过了/路径名称重复，跳过。");
+
+            let progress = json!({
+                "index": i,
+                "status": "re-path",
+            });
+            app.emit("save-mods-progress", progress.to_string())
+                .map_err(|e| format!("投递信息失败: {}", e))?;
+            continue;
+        }
 
         if path.is_dir() {
             println!("是目录");
@@ -226,18 +241,6 @@ pub fn save_mods(app: AppHandle, paths: Vec<String>, env_id: u32) -> Result<(), 
                     e
                 )
             })?;
-        }
-
-        let already_install_flag = my_db::check_mod_path(&file_stem)
-            .map_err(|e| format!("检测到check_mod_path时发生了错误: {}", e))?;
-
-        println!(
-            "already_install_flag {} {}",
-            &file_stem, already_install_flag
-        );
-        if already_install_flag {
-            println!("已经安装过了，覆盖更新，不再添加新的存档记录。");
-            continue;
         }
 
         // 添加到数据库进行记录

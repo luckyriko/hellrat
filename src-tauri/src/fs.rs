@@ -1,13 +1,8 @@
-use crate::db;
 use anyhow::{Context, Result};
-use rayon::prelude::*;
-use serde::{Deserialize, Serialize};
 use std::fs;
 use std::io;
 use std::path::{Path, PathBuf};
 use std::process::Command;
-use tauri::AppHandle;
-use tauri_plugin_dialog::DialogExt;
 use unrar::Archive;
 use zip::ZipArchive;
 
@@ -56,6 +51,7 @@ pub fn dir_copy(src: &Path, dst: &Path) -> Result<()> {
 }
 
 // 目录移动
+#[allow(dead_code)]
 pub fn dir_move(src: &Path, dst: &Path) -> Result<()> {
     dir_copy(src, dst)?;
     fs::remove_dir_all(src)?;
@@ -65,7 +61,7 @@ pub fn dir_move(src: &Path, dst: &Path) -> Result<()> {
 
 // 是否只有一个目录
 pub fn has_only_one_directory(path: &Path) -> Result<bool> {
-    let mut entries = fs::read_dir(path)?
+    let entries = fs::read_dir(path)?
         .filter_map(Result::ok)
         .collect::<Vec<_>>();
 

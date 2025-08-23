@@ -27,7 +27,7 @@ onMounted(async () => {
       return;
     }
 
-    const response = await fetch("https://api.luckyriko.com/app/getLatestVersion");
+    const response = await fetch("https://hellrat.luckyriko.com/app/getLatestVersion");
     // console.log(response.status);  // e.g. 200
     // console.log(response.statusText); // e.g. "OK"
     if (response.status != 200) {
@@ -78,7 +78,7 @@ const ddup = async () => {
     <div class="left">
       <header>
         <div class="logo-text">
-          <img alt="HellRat" class="logo" src="@src/assets/shushu.png" width="40" height="40" />
+          <img alt="HellRat" class="logo" src="/app-icon.png" width="40" height="40" />
           <span>HellRat</span>
         </div>
       </header>

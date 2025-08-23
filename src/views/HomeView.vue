@@ -152,7 +152,7 @@
       </el-form-item> -->
       <el-form-item label="图标" :label-width="formLabelWidth" prop="icon">
         <div v-if="form.previewPath" class="image" @click="selectPreViewImg">
-          <el-image style="height: 150px" :src="form.previewPath" fit="fill" />
+          <el-image style="height: 150px; background-color: #f0f0f0;" :src="form.previewPath" fit="fill" />
           <el-icon class="close-icon" size="30" color="red"
             @click.stop="removeImg"><i-ep-circle-close-filled /></el-icon>
         </div>
