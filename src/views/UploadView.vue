@@ -1,114 +1,219 @@
 <template>
   <div>
-    <!-- <div data-tauri-drag-region style="height: 200px;">
-      dsadsa
-    </div> -->
-    <div ref="drop" style="height: 200px;width: 100%;background-color: red;">
-      拖动至此区域上传
+    <div ref="drop" class="area">
+      <div class="title">拖动一个或多个</div>
+      <div class="title">目录 / 7z、zip、rar压缩文件</div>
+      <div class="title">至此页面任意位置进行上传，也可手动选择</div>
+
+      <div class="bb">
+        <el-button type="primary" @click="selectDirs">选择目录</el-button>
+        <el-button type="primary" @click="selectFiles">选择文件</el-button>
+      </div>
     </div>
-
-
-    <!-- <div class="drop-zone" @dragover.prevent @drop="handleDrop">
-      <p>将文件拖到这里上传</p>
-      <ul>
-        <li v-for="(f, index) in filePaths" :key="index">
-          {{ f }}
-        </li>
-      </ul>
-    </div> -->
+    <div>
+      <div class="box" v-for="(item, index) in files" :key="index">
+        <div class="left">{{ index + 1 + '. ' + item.name }}</div>
+        <div class="right" :class="{ 'error': item.status == 'non-support' }">
+          {{ getStatusName(item.status) }}
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup>
 import { onMounted, onBeforeUnmount } from 'vue';
 import { invoke } from '@tauri-apps/api/core';
-import { ref } from 'vue'
+import { getCurrentWebview } from "@tauri-apps/api/webview";
+import { ref } from 'vue';
+import { listen } from '@tauri-apps/api/event';
+import { basename } from '@tauri-apps/api/path';
+import { open } from '@tauri-apps/plugin-dialog';
 
+const files = ref([]);
 
+const environment = ref({
+  id: 1,
+  name: 'default',
+  activate: 1
+});
 
+const getStatusName = (status) => {
+  let statusName = '未知状态';
+  switch (status) {
+    case 'wait':
+      statusName = '等待ing';
+      break;
+    case 'start':
+      statusName = '已开始';
+      break;
+    case 'copy':
+      statusName = '复制ing';
+      break;
+    case 'unzip':
+      statusName = '解压ing';
+      break;
+    case 'non-support':
+      statusName = '不支持的文件格式';
+      break;
+    case 'save':
+      statusName = '保存ing';
+    case 'end':
+      statusName = '已完成';
+      break;
+    default:
+  }
+  return statusName;
+};
 
+const selectFiles = async () => {
+  const selectedPath = await open({
+    multiple: true,
+    directory: false,
+    title: "请选择至少一个Mod压缩文件",
+  });
 
-
-
-
-const filePaths = ref([])
-
-function handleDrop(event) {
-  event.preventDefault()
-
-  const files = event.dataTransfer?.files
-  if (!files || files.length === 0) return
-
-  for (const file of files) {
-    // Tauri 中的 file.path 是可用的！
-    filePaths.value.push(file.path ?? file.name)
-    console.log(file);
-
+  if (selectedPath) {
+    receiveModsFilePath(selectedPath)
   }
 
-
-  // ✅ 可以在这里调用后端 API 保存文件、移动文件等操作
 }
 
+const selectDirs = async () => {
+  const selectedPath = await open({
+    multiple: true,
+    directory: true,
+    title: "请选择至少一个Mod目录",
+  });
 
-async function unzipFile(zipPath) {
-  if (!zipPath) {
-    ElMessage.error('没有获取到文件路径')
-    return;
+  if (selectedPath) {
+    receiveModsFilePath(selectedPath)
   }
+
+}
+
+// 获取当前环境
+async function getEnvironmentList() {
   try {
-    await invoke('unzip_one_file', { zipPath });
-    // console.log('Folder opened successfully!');
+    let env = await invoke('get_environment_list');
+    let activateItem = env.find(x => x.activate == 1)
+    environment.value = activateItem;
+
   } catch (error) {
-    console.error('Failed to unzip folder:', error);
+    console.error('获取当前环境变量失败:', error);
     ElMessage.error(error || 'Oops, this is a error message.')
 
   }
 }
 
-onMounted(async () => {
+async function receiveModsFilePath(paths) {
+  if (!paths) {
+    ElMessage.error('没有获取到文件路径')
+    return;
+  }
+  try {
+    files.value = [];
+    await Promise.allSettled(paths.map(async element => {
+      files.value.push({
+        name: await basename(element),
+        status: 'wait'
+      })
+    }));
 
+    await invoke('save_mods', { paths, env_id: Number(environment.value.id) });
+    console.log('save_mods successfully!');
+  } catch (error) {
+    console.error('save_mods fail:', error);
+    ElMessage.error(error || '存档失败')
+
+  }
+}
+let dragDropUnlisten = null;
+let eventUnlisten = null;
+
+
+onMounted(async () => {
+  dragDropUnlisten = await getCurrentWebview().onDragDropEvent((event) => {
+    if (event.payload.type === 'over') {
+      // console.log('User hovering', event.payload.position);
+    } else if (event.payload.type === 'drop') {
+      console.log('User dropped', event.payload.paths);
+      let paths = event.payload.paths;
+      receiveModsFilePath(paths)
+    } else {
+      console.log('File drop cancelled');
+    }
+  });
+
+  await getEnvironmentList();
+
+
+  eventUnlisten = await listen('save-mods-progress', (event) => {
+    console.log(event.payload);
+    try {
+      let progress = JSON.parse(event.payload);
+      if (progress) {
+        files.value[progress.index]['status'] = progress.status;
+      }
+    } catch (e) {
+      console.log(e);
+    }
+  });
 
 
 })
 onBeforeUnmount(() => {
+  dragDropUnlisten();
+  eventUnlisten();
 })
 
-const tableData = [
-  {
-    date: '2016-05-03',
-    name: 'Tom',
-    address: 'No. 189, Grove St, Los Angeles',
-  },
-  {
-    date: '2016-05-02',
-    name: 'Cilly',
-    address: 'No. 189, Grove St, Los Angeles',
-  },
-  {
-    date: '2016-05-04',
-    name: 'Linda',
-    address: 'No. 189, Grove St, Los Angeles',
-  },
-  {
-    date: '2016-05-01',
-    name: 'John',
-    address: 'No. 189, Grove St, Los Angeles',
-  },
-]
+
 </script>
 
 <style>
-.sortable-ghost {
-  color: white;
-  background-color: red !important;
+.area {
+  /* height: 200px; */
+  width: 100%;
+  background-color: #ececec;
+  padding: 20px;
+  box-sizing: border-box;
+
+  .title {
+    width: 100%;
+    font-weight: bold;
+    color: #666;
+    text-align: center;
+  }
+
 }
 
-.drop-zone {
-  border: 2px dashed #888;
-  padding: 40px;
-  text-align: center;
-  color: #555;
-  min-height: 200px;
+.bb {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-around;
+  margin-top: 20px;
+}
+
+.box {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  padding: 0 10px;
+  margin-top: 5px;
+  font-size: 12px;
+  box-sizing: border-box;
+
+  .left {
+    flex: 1;
+  }
+
+  .right {
+    width: 100px;
+    text-align: center;
+  }
+}
+
+.error {
+  color: red;
 }
 </style>

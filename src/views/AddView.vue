@@ -95,10 +95,17 @@ import { open } from '@tauri-apps/plugin-dialog';
 import { invoke, convertFileSrc } from '@tauri-apps/api/core';
 import { readTextFile, BaseDirectory } from '@tauri-apps/plugin-fs';
 import { join, basename } from '@tauri-apps/api/path';
+import { Store } from '@tauri-apps/plugin-store'
 
 const loadingFlag = ref(false);
 const modsDir = ref("");
 const gameDataDir = ref("");
+const gameMod = reactive({
+  app_config_path: '',
+  game_data_path: '',
+  mods_store_path: '',
+  mods_temp_cache_path: ''
+})
 
 onMounted(async () => {
   const loading = ElLoading.service({
@@ -108,18 +115,14 @@ onMounted(async () => {
   })
 
   try {
-    const contents = await readTextFile('config.json', {
-      baseDir: BaseDirectory.AppConfig,
-    });
-    if (contents) {
-      const config = JSON.parse(contents);
-      gameDataDir.value = config.gameDataDir || '';
-      modsDir.value = config.modsDir || '';
-      if (!gameDataDir.value || !modsDir.value) {
-        ElMessage.error('请先去设置里添加游戏data目录和mod存档目录')
+    const store = await Store.load('config.json', { autoSave: false })
+
+    const storeGameMod = await store.get('game_mod');
+    console.log(storeGameMod);
+    if (storeGameMod) {
+      for (const [key, value] of Object.entries(gameMod)) {
+        gameMod[key] = storeGameMod[key] || value;
       }
-    } else {
-      ElMessage.error('请先去设置里添加游戏data目录和mod存档目录')
     }
 
   } catch (error) {
@@ -279,7 +282,7 @@ const rules = reactive({
 })
 
 const onSubmit = async (formEl) => {
-  if (!gameDataDir.value || !modsDir.value) {
+  if (!gameMod.game_data_path || !gameMod.mods_store_path) {
     ElMessage.error('请先去设置里添加游戏data目录和mod存档目录');
     return;
   }

@@ -1,11 +1,11 @@
-use anyhow::{Result};
+use anyhow::Result;
 use once_cell::sync::OnceCell;
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 use std::fs;
 use std::path::PathBuf;
 use std::sync::Mutex;
 use tauri::AppHandle;
-use tauri::{Manager};
+use tauri::Manager;
 use tauri_plugin_store::StoreExt;
 
 // 全局变量，存储 identifier
@@ -31,19 +31,17 @@ pub fn get_identifier() -> Option<String> {
 //         .with_context(|| format!("读取配置文件失败: {:?}", config_path))?;
 
 //     // 解析为结构体
-//     let config = serde_json::from_str(&content).context("配置文件格式错误")?;
+//     let config = serde_json::from_str(&content).with_context(|| format!("配置文件解析失败: {:?}", config_path))?;
 //     // println!("{:?}", config);
 
 //     Ok(config)
 // }
 
-pub fn get_app_config_json(app: &AppHandle, key: String) -> Result<Value> {
+pub fn get_app_config_json(app: &AppHandle, key: &str) -> Result<Value> {
     let store = app.store("config.json")?;
     let json_value = store.get(key).unwrap_or(json!({}));
-    println!("{}", json_value);
     Ok(json_value)
 }
-
 
 pub fn get_app_config_path(app: &AppHandle) -> Option<PathBuf> {
     app.path().app_config_dir().ok()
@@ -83,6 +81,7 @@ pub fn initialization_config_json(app: &AppHandle) -> Result<()> {
                 "game_data_path": "",
                 "mods_store_path": mod_store_path,
                 "mods_temp_cache_path": mods_temp_cache_path,
+                "mods_install_priority": "asc"
             }),
         );
     }
@@ -109,7 +108,7 @@ pub fn initialization_config_json(app: &AppHandle) -> Result<()> {
             "quickly_chat",
             json!({
                 "flag": true,
-                "shortcut": "ctrl + p",
+                "shortcut": "ctrl + .",
                 "typing_interval": "10",
                 "width": "800.0",
                 "height": "600.0",
@@ -128,6 +127,6 @@ pub fn initialization_config_json(app: &AppHandle) -> Result<()> {
             }),
         );
     }
-    
+
     Ok(())
 }

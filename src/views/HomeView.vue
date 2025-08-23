@@ -1,176 +1,156 @@
 <template>
   <div class="container" @click="displayNoneMenu">
-    <!-- 标题 -->
-    <el-row>
-      <el-col :span="24">
-        <div class="title">列表</div>
-      </el-col>
-    </el-row>
-    <!-- 标题. -->
-
     <!-- 工具栏 -->
-    <el-row :gutter="20">
-      <el-col :span="4">
-        <el-segmented v-model="current" :options="options" size="default" @change="searchMod" />
-      </el-col>
-      <el-col :span="8">
+    <div class="header">
+      <el-popconfirm title="请选择一个吧？！" @confirm="openUploadModWindow" @cancel="getModsRecords" placement="bottom"
+        confirm-button-text="新增上传" cancel-button-text="选择现有" :width="250">
+        <template #reference>
+          <el-button type="warning" :icon="DocumentAdd" plain>添加</el-button>
+        </template>
+      </el-popconfirm>
+      <el-button type="info" :icon="Operation" plain @click="toggleView">{{ listShowType == 'grid' ? '图标' : '列表'
+      }}</el-button>
+      <el-button type="success" :icon="Sort" plain @click="searchModByOrder">{{ orderAscFlag ? '正序' : '倒序'
+      }}</el-button>
+
+
+      <div style="margin-left: 20px;">
+        <el-select v-model="environment" value-key="id" placeholder="Select" style="width: 240px"
+          @change="environmentChange">
+          <el-option v-for="item in environmentList" :key="item.id" :label="item.name" :value="item" />
+        </el-select>
+
+        <el-button type="primary" text @click="addEnvVisible = true" style="padding-left: 6px;">
+          <template #icon>
+            <el-icon size="20" color="#666">
+              <EditPen />
+            </el-icon>
+          </template>
+        </el-button>
+      </div>
+
+      <div style="margin-left: 20px;margin-right: 20px;flex:1">
         <el-input v-model="search" placeholder="请输入名称" clearable @keyup.enter.native="searchMod">
           <template #append>
             <el-button @click="searchMod"><i-ep-search /></el-button>
           </template>
         </el-input>
-      </el-col>
+      </div>
 
-      <el-col :span="3">
-        <el-button @click="activeAllMods" type="success" plain>全部启用</el-button>
-      </el-col>
-      <el-col :span="3">
-        <el-button @click="deploy" type="primary" plain>应用安装</el-button>
-      </el-col>
-      <el-col :span="3">
-        <!-- <el-button @click="toSort" color="orange" plain>编辑排序</el-button> -->
-      </el-col>
-      <el-col :span="3" :offset="0">
-        <el-button @click="uninstallAllMods" type="danger" plain>一键卸载</el-button>
-      </el-col>
-    </el-row>
-    <!-- <el-button class="mt-4" style="width: 100%" @click="onAddItem">
-      测试新增
-    </el-button> -->
+      <el-button type="primary" :icon="MagicStick" plain @click="installMods">应用</el-button>
+      <el-button type="danger" :icon="Delete" plain @click="uninstallMods">清除</el-button>
+    </div>
     <!-- 工具栏. -->
 
     <!-- 表格 -->
-    <el-table ref="tableRef" :default-sort="{ prop: 'id', order: 'descending' }" :data="modsData"
-      style="width: 100%;height:100%" row-key="id" stripe @expand-change="getModDetail"
-      @row-contextmenu="handleContextMenu">
-      <el-table-column type="expand">
-        <template #default="props">
-          <div style="margin-left: 20px;" v-if="props.row?.files && props.row.files.length > 0">
-            <p v-for="(item, index) in props.row.files" :key="index">{{ item }}</p>
+    <el-scrollbar class="main-scroll">
+      <div v-show="listShowType == 'grid'" class="content-area grid" id="sortableGrid">
+        <div v-for="item in modsData" :key="item.id" class="item" :class="{ 'install': item.env_mod_install_flag }"
+          @contextmenu.prevent="openMenu($event, item)">
+          <el-image :src="item.previewPath" fit="cover" style="width: 100%; height: 200px"
+            @click="openModInfoDialog(item.id)">
+            <template #error>
+              <div class="image-slot">
+                <el-icon><i-ep-picture /></el-icon>
+              </div>
+            </template>
+          </el-image>
+          <div class="text" @click="openSelectOptionsDialog(item.id, item.type)">
+            <span>{{ item.name }}</span>
+            <el-icon size="20" color="violet" v-if="item.type == 2"><i-ep-edit /></el-icon>
           </div>
-          <div style="margin-left: 20px;" v-else>未安装 / 没有实际文件被安装</div>
-        </template>
-      </el-table-column>
-      <el-table-column prop="id" label="ID" sortable min-width="55" align="center" />
-      <el-table-column label="名称" min-width="220">
-        <template #default="scope">
-          <div style="display: flex; flex-direction: row; align-items: center;">
-            <!-- @contextmenu="handleContextMenu($event, scope.row.id)" -->
-            <div v-if="scope.row.link ? true : false">
-              <el-link :underline="true" type="primary" @click="openBrowser(scope.row.link)">{{ scope.row.memo
-              }}</el-link>
+          <div class="switch">
+            <el-switch v-model="item.activate" style="--el-switch-on-color: #13ce66; --el-switch-off-color: #ff4949"
+              :active-value="1" :inactive-value="0" @change="changeModActivate(item)" />
+          </div>
+        </div>
+      </div>
+      <div v-show="listShowType != 'grid'" class="content-area list" id="sortableList">
+        <div v-for="item in modsData" :key="item.id" class="item">
+          <el-switch v-model="item.activate" style="--el-switch-on-color: #13ce66; --el-switch-off-color: #ff4949"
+            :active-value="1" :inactive-value="0" @change="changeModActivate(item)" />
+          <el-image :src="item.previewPath" fit="cover" @click="openModInfoDialog(item.id)"
+            style="width: 40px; height: 40px; border-radius: 50%;margin-right: 10px;margin-left: 10px;"
+            :class="{ 'install': item.env_mod_install_flag }">
+            <template #error>
+              <div class="image-slot">
+                {{ item.name[0].toUpperCase() }}
+              </div>
+            </template>
+          </el-image>
+          <div style="display: flex;flex:1; flex-direction: row;justify-content: space-between;">
+            <div class="text" @click="openModInfoDialog(item.id)">{{ item.name }}</div>
+            <div>
+              <el-button size="small" plain @click="openDir(item)">
+                打开
+              </el-button>
+              <el-button size="small" plain @click="openModInfoDialog(item.id)">
+                详情
+              </el-button>
+              <el-button size="small" plain @click="handleEdit(item)">
+                编辑
+              </el-button>
+              <el-button type="danger" size="small" plain @click="deleteMod(item)">
+                删除
+              </el-button>
             </div>
-            <div v-else>
-              {{ scope.row.memo }}
-            </div>
+          </div>
+        </div>
+      </div>
+    </el-scrollbar>
 
-            <div v-if="scope.row.preview" style="display: flex; flex-direction: row; align-items: center;">
-              <el-popover :width="500" placement="right"
-                popper-style="box-shadow: rgb(14 18 22 / 35%) 0px 10px 38px -10px, rgb(14 18 22 / 20%) 0px 10px 20px -15px; padding: 20px;">
-                <!-- 图片图标 -->
-                <template #reference>
-                  <el-icon size="20" color="purple"><i-ep-picture-rounded /></el-icon>
-                </template>
-                <!-- 图片内容 -->
-                <template #default>
-                  <el-image style="width: 450px" :src="scope.row.previewPath" fit="fill" />
-                </template>
-              </el-popover>
-            </div>
-          </div>
-        </template>
-      </el-table-column>
-      <!-- <el-table-column prop="mod_type" label="类型" :formatter="type" align="center" /> -->
-      <el-table-column prop="activate" label="安装" :filters="[
-        { text: '已安装', value: true },
-        { text: '未安装', value: false },
-      ]" :filter-method="filterHandler" filter-placement="bottom-end" align="center">
-        <template #default="scope">
-          <!-- <el-tag :type="scope.row.activate ? 'success' : 'danger'" disable-transitions>{{ scope.row.activate ?
-            '已安装' : '未安装' }}</el-tag> -->
-          <el-switch v-model="scope.row.activate" inline-prompt @change="activateChange(scope.row)"
-            style="--el-switch-on-color: #13ce66; --el-switch-off-color: #ff4949" active-text="是" inactive-text="否" />
-        </template>
-      </el-table-column>
-      <el-table-column prop="author" label="作者" show-overflow-tooltip align="center" />
-      <!-- <el-table-column prop="link" label="链接" /> -->
-      <el-table-column property="desc" label="详情" width="140" show-overflow-tooltip align="center" />
-      <!-- <el-table-column prop="preview" label="预览图" /> -->
-      <el-table-column fixed="right" label="操作" min-width="180" align="center">
-        <template #default="scope">
-          <el-button size="small" @click="openDir(scope.row)">
-            打开
-          </el-button>
-          <el-button size="small" @click="handleEdit(scope.row)">
-            编辑
-          </el-button>
-          <el-button type="danger" size="small" @click="deleteMod(scope.row)">
-            删除
-          </el-button>
-        </template>
-      </el-table-column>
-    </el-table>
     <!-- 表格. -->
 
     <!-- 右键功能 -->
     <Menu ref="menuRef" :mentList="mentList" @select-label="selectMenuLabel"></Menu>
     <!-- 右键功能. -->
 
-    <el-row class="footer">
-      <el-col :span="6" style="text-align: center;">
-        <el-statistic title="总数量" :value="statistics.records_total_count" />
-      </el-col>
-      <el-col :span="6" style="text-align: center;">
-        <el-statistic :value="statistics.records_activate_count">
-          <template #title>
-            <div style="display: inline-flex; align-items: center">
-              使用状况
-            </div>
-          </template>
-          <template #suffix>/{{ statistics.records_total_count }}</template>
-        </el-statistic>
-      </el-col>
-      <el-col :span="6" style="text-align: center;">
-        <el-statistic :value="statistics.model_activate_count">
-          <template #title>
-            <div style="display: inline-flex; align-items: center">
-              模型数量
-            </div>
-          </template>
-          <template #suffix>/{{ statistics.model_total_count }}</template>
-        </el-statistic>
-      </el-col>
-      <el-col :span="6" style="text-align: center;">
-        <el-statistic :value="statistics.voice_activate_count">
-          <template #title>
-            <div style="display: inline-flex; align-items: center">
-              音频杂项
-            </div>
-          </template>
-          <template #suffix>/{{ statistics.voice_total_count }}</template>
-        </el-statistic>
-      </el-col>
-    </el-row>
+    <div class="footer">
+      <div class="text">
+        <!-- <div>环境Mod总数：1000</div>
+        <div>Mod总数：1000</div> -->
+        <el-button plain color="#626aef" @click="activateAllMods" size="small">全启</el-button>
+        <el-button plain color="#626aef" @click="disableAllMods" size="small">全禁</el-button>
+      </div>
+      <div class="text">
+        <div @click="donateFlag = !donateFlag">
+          <span v-show="donateFlag" style="color: #666;font-size: 0.8rem;">如果你认可开发者的辛勤劳作 请他喝杯饮料吧</span>
+        </div>
+        <el-icon color="deepskyblue" size="20" @click="donate">
+          <ColdDrink />
+        </el-icon>
+      </div>
+    </div>
+
   </div>
 
-  <SortableDiglog v-model="dialogVisible" @close="closeDialog"></SortableDiglog>
+  <SelectOptions v-model="dialogVisible" @close="closeDialog" :id="currentSelectId" :env-id="environment.id"
+    :mods-store-path="gameMod.mods_store_path"></SelectOptions>
 
-  <el-dialog v-model="dialogFormVisible" title="修改Mod信息" width="500" :close-on-click-modal="false">
+  <AddEnvironments v-model="addEnvVisible" @close="closeEnvVisible" :list="environmentList"
+    @refresh="getEnvironmentList">
+  </AddEnvironments>
+
+  <SelectMods v-model="selectModsVisible" @close="closeSelectModsVisible" :env-id="environment.id"
+    :list="modsRecordsList" @refresh="getModsList">
+  </SelectMods>
+
+  <ShowModInfo v-model="showModInfoVisible" @close="closeShowModInfoVisible" :env-id="environment.id"
+    :record-id="showModId" :mods-store-path="gameMod.mods_store_path">
+  </ShowModInfo>
+
+  <el-dialog v-model="dialogFormVisible" title="修改Mod信息" width="40%" :close-on-click-modal="false">
     <el-form ref="formRef" :model="form" :rules="rules">
-      <el-form-item label="名称" :label-width="formLabelWidth" prop="memo">
-        <el-input v-model="form.memo" autocomplete="off" />
+      <el-form-item label="名称" :label-width="formLabelWidth" prop="name">
+        <el-input v-model="form.name" autocomplete="off" />
       </el-form-item>
-      <el-form-item label="类型" :label-width="formLabelWidth" prop="mod_type">
-        <!-- <el-select v-model="form.region" placeholder="请选择Mod类型">
-          <el-option label="模型" value="model" />
-          <el-option label="音频" value="voice" />
-        </el-select> -->
+      <!-- <el-form-item label="类型" :label-width="formLabelWidth" prop="mod_type">
         <el-radio-group v-model="form.mod_type">
           <el-radio value="model">模型</el-radio>
           <el-radio value="voice">音频/杂项</el-radio>
         </el-radio-group>
-      </el-form-item>
-      <el-form-item label="预览图" :label-width="formLabelWidth" prop="preview">
+      </el-form-item> -->
+      <el-form-item label="图标" :label-width="formLabelWidth" prop="icon">
         <div v-if="form.previewPath" class="image" @click="selectPreViewImg">
           <el-image style="height: 150px" :src="form.previewPath" fit="fill" />
           <el-icon class="close-icon" size="30" color="red"
@@ -179,16 +159,25 @@
         <div v-else class="image" @click="selectPreViewImg">
           <el-icon size="20" color="#666"><i-ep-plus /></el-icon>
         </div>
-        <el-input v-model.trim="form.preview" type="hidden" />
+        <el-input v-model.trim="form.icon" type="hidden" />
       </el-form-item>
       <el-form-item label="作者" :label-width="formLabelWidth" prop="author">
         <el-input v-model="form.author" autocomplete="off" />
+      </el-form-item>
+      <el-form-item label="版本" :label-width="formLabelWidth" prop="version">
+        <el-input v-model="form.version" autocomplete="off" />
       </el-form-item>
       <el-form-item label="链接" :label-width="formLabelWidth" prop="link">
         <el-input v-model="form.link" autocomplete="off" />
       </el-form-item>
       <el-form-item label="详情" :label-width="formLabelWidth" prop="desc">
         <el-input v-model="form.desc" autocomplete="off" type="textarea" />
+      </el-form-item>
+      <el-form-item label="图片路径" :label-width="formLabelWidth" prop="preview" style="display: none;">
+        <el-input v-model="form.preview" autocomplete="off" disabled />
+      </el-form-item>
+      <el-form-item label="图片网址" :label-width="formLabelWidth" prop="previewPath" style="display: none;">
+        <el-input v-model="form.previewPath" autocomplete="off" disabled />
       </el-form-item>
     </el-form>
     <template #footer>
@@ -203,17 +192,245 @@
   </el-dialog>
 </template>
 <script setup>
-import { ref, reactive, onMounted, toRaw, computed } from 'vue'
+import { h, ref, reactive, onMounted, toRaw, computed, nextTick } from 'vue';
 import { open as openShell } from '@tauri-apps/plugin-shell';
 import { open as openDialog } from '@tauri-apps/plugin-dialog';
 import { invoke, convertFileSrc } from '@tauri-apps/api/core';
 import { exists, mkdir, create, readTextFile, writeTextFile, BaseDirectory } from '@tauri-apps/plugin-fs';
 import { join } from '@tauri-apps/api/path';
-import SortableDiglog from './components/SortableDiglog.vue';
+import SelectOptions from './components/SelectOptions.vue';
+import AddEnvironments from './components/AddEnvironments.vue';
+import SelectMods from './components/SelectMods.vue';
+import ShowModInfo from './components/ShowModInfo.vue';
 import Menu from './components/Menu.vue';
+import Sortable from 'sortablejs';
+import { DocumentAdd, Delete, EditPen, Operation, Sort, MagicStick, ColdDrink } from '@element-plus/icons-vue'
+import { open } from '@tauri-apps/plugin-shell';
+import { listen } from '@tauri-apps/api/event';
 
-const current = ref('模型');
-const options = ['模型', '音频/杂项'];
+const donateFlag = ref(true);
+const donate = async () => {
+  await open("https://afdian.com/a/luckyriko");
+
+}
+
+const gameMod = reactive({
+  app_config_path: '',
+  game_data_path: '',
+  mods_store_path: '',
+  mods_temp_cache_path: ''
+});
+
+const environment = ref({
+  id: 1,
+  name: 'default',
+  activate: 1
+});
+
+const environmentList = ref([]);
+
+const environmentChange = async (item) => {
+  // console.log(item.id, item.name);
+  try {
+    // console.log(environment.value);
+    invoke("update_environment_activate", { id: item.id }).then(async () => {
+      await getEnvironmentList();
+      await getModsList();
+    });
+  } catch (error) {
+    ElMessage.error("切换环境失败，请刷新页面重试！")
+
+  }
+
+
+}
+
+const toggleView = () => {
+  listShowType.value = listShowType.value == 'grid' ? 'list' : 'grid';
+  localStorage.setItem("ListShowType", listShowType.value);
+}
+
+// 切换该环境下的Mod安装状态
+const changeModActivate = async (mod) => {
+  // console.log(mod.activate, Number(mod.activate));
+  try {
+    await invoke("update_environment_mod_activate", { id: mod.env_mod_id, activate: Number(mod.activate) });
+  } catch (error) {
+    ElMessage.error("切换失败，请刷新页面重试！")
+
+  }
+}
+
+const activateAllMods = async () => {
+  const loading = ElLoading.service({
+    lock: true,
+    text: '正在启用游戏补丁ing...',
+    background: 'rgba(0, 0, 0, 0.7)',
+  })
+  try {
+    await Promise.allSettled(modsData.value.map(async mod => {
+      await invoke("update_environment_mod_activate", { id: mod.env_mod_id, activate: 1 });
+    }));
+
+  } catch (error) {
+    ElMessage.error("全启失败：" + String(error))
+
+  } finally {
+    loading.close();
+    await getModsList();
+
+  }
+}
+
+const disableAllMods = async () => {
+  const loading = ElLoading.service({
+    lock: true,
+    text: '正在禁用游戏补丁ing...',
+    background: 'rgba(0, 0, 0, 0.7)',
+  })
+  try {
+    await Promise.allSettled(modsData.value.map(async mod => {
+      await invoke("update_environment_mod_activate", { id: mod.env_mod_id, activate: 0 });
+    }));
+  } catch (error) {
+    ElMessage.error("全禁失败：" + String(error))
+
+  } finally {
+    loading.close();
+    await getModsList();
+
+  }
+}
+
+
+function setGridSort() {
+  const el = document.getElementById('sortableGrid');
+  new Sortable(el, {
+    sort: true,
+    animation: 150,
+    swapThreshold: 0.5,
+
+    // handle: '.handle-drag',
+    ghostClass: 'sortable-ghost',
+    // easing: 'cubic-bezier(1, 0, 0, 1)',
+    onStart: (e) => {
+      // console.log('onstart:', e);
+    },
+    onEnd: (e) => {
+      // console.log('onEnd:', e)
+
+      // 位置没变化直接返回
+      if (e.oldIndex == e.newIndex) {
+        console.log('排序无变化');
+        return;
+      }
+
+      // 位置有变化则更新源数组对象为排序后的状况
+      const currRow = modsData.value.splice(e.oldIndex, 1)[0];
+      modsData.value.splice(e.newIndex, 0, currRow);
+
+      // 打印值与页面进行对比查看是否正确
+      // console.log(modsData.value);
+
+      // 更新后端排序值
+      updateEnvModSort(Number(e.newIndex))
+
+    },
+  })
+}
+
+
+function setListSort() {
+  const el = document.getElementById('sortableList');
+  new Sortable(el, {
+    sort: true,
+    animation: 150,
+    swapThreshold: 0.5,
+
+    // handle: '.handle-drag',
+    ghostClass: 'sortable-ghost',
+    // easing: 'cubic-bezier(1, 0, 0, 1)',
+    onStart: (e) => {
+      // console.log('onstart:', e);
+    },
+    onEnd: (e) => {
+      // console.log('onEnd:', e)
+
+      // 位置没变化直接返回
+      if (e.oldIndex == e.newIndex) {
+        console.log('排序无变化');
+        return;
+      }
+
+      // 位置有变化则更新源数组对象为排序后的状况
+      const currRow = modsData.value.splice(e.oldIndex, 1)[0];
+      modsData.value.splice(e.newIndex, 0, currRow);
+
+      // 打印值与页面进行对比查看是否正确
+      // console.log(modsData.value);
+
+      // 更新后端排序值
+      updateEnvModSort(Number(e.newIndex))
+
+    },
+  })
+}
+
+const updateEnvModSort = async (index) => {
+  let env_mod_id = modsData.value[index]['env_mod_id'];
+  let pre_sort = '', next_sort = '';
+  if (orderAscFlag.value) {
+    // 正序
+    // pre_sort取前一个元素的排序值, next_sort取后一个元素的排序值
+    // 如果是第一个则pre_sort为空, 如果是最后一个则next_sort为空
+    if (index == 0) {
+      pre_sort = '';
+      next_sort = modsData.value[index + 1]['sort'] ?? '';
+    }
+
+    if (index == modsData.value.length - 1) {
+      pre_sort = modsData.value[index - 1]['sort'] ?? '';
+      next_sort = '';
+    }
+
+    if (index > 0 && index < modsData.value.length - 1) {
+      pre_sort = modsData.value[index - 1]['sort'] ?? '';
+      next_sort = modsData.value[index + 1]['sort'] ?? '';
+    }
+
+  } else {
+    // 倒序
+    if (index == 0) {
+      pre_sort = modsData.value[index + 1]['sort'] ?? '';
+      next_sort = '';
+    }
+
+    if (index == modsData.value.length - 1) {
+      pre_sort = '';
+      next_sort = modsData.value[index - 1]['sort'] ?? '';
+    }
+
+    if (index > 0 && index < modsData.value.length - 1) {
+      pre_sort = modsData.value[index + 1]['sort'] ?? '';
+      next_sort = modsData.value[index - 1]['sort'] ?? '';
+    }
+  }
+  // console.log(`当前修改的id：${env_mod_id}, pre_sort：${pre_sort}, next_sort：${next_sort}`);
+
+  try {
+    let sort = await invoke("update_environment_mod_sort", { env_mod_id, pre_sort, next_sort });
+    modsData.value[index]['sort'] = sort;
+    // ElMessage({
+    //   message: '排序值更新成功',
+    //   type: 'success',
+    // })
+  } catch (error) {
+    console.error("安装失败", error);
+    ElMessage.error('排序值更新失败，请手动刷新后重试！')
+
+  }
+}
+
 const mentList = [
   {
     label: '打开',
@@ -242,10 +459,10 @@ const displayNoneMenu = () => {
   currentMenuData.value = null;
 }
 //右键事件
-const handleContextMenu = (row, column, event) => {
+const openMenu = (event, row) => {
   //阻止浏览器默认事件
   event.preventDefault();
-
+  // console.log(event.clientX, event.clientY);
   // 通过获取到的组件实例，设置菜单的显示和位置
   menuRef.value.show = true;
   menuRef.value.setPosition(event.clientX, event.clientY);
@@ -253,7 +470,7 @@ const handleContextMenu = (row, column, event) => {
 }
 
 const selectMenuLabel = (menuItem) => {
-  console.log(currentMenuData.value, menuItem.operation);
+  // console.log(currentMenuData.value, menuItem.operation);
   switch (menuItem.operation) {
     case 'openDir':
       openDir(currentMenuData.value);
@@ -270,12 +487,32 @@ const selectMenuLabel = (menuItem) => {
 
 }
 
+const addEnvVisible = ref(false);
+const closeEnvVisible = () => {
+  addEnvVisible.value = false;
+};
+
+
+const showModInfoVisible = ref(false);
+const showModId = ref(0);
+const closeShowModInfoVisible = () => {
+  showModInfoVisible.value = false;
+};
+const openModInfoDialog = async (id) => {
+  showModId.value = id;
+  showModInfoVisible.value = true;
+}
+
 // 排序 
 // 定义一个响应式变量，用于控制对话框的显示与隐藏
 const dialogVisible = ref(false);
+const currentSelectId = ref(0);
 
 // 打开对话框的函数，将 dialogVisible 设置为 true
-const toSort = () => {
+const openSelectOptionsDialog = (id, type) => {
+  if (!id) return;
+  if (type != 2) return;
+  currentSelectId.value = id;
   dialogVisible.value = true;
 };
 
@@ -289,14 +526,15 @@ const formRef = ref();
 const dialogFormVisible = ref(false)
 const formLabelWidth = '80px'
 const form = reactive({
-  memo: '',
-  directory: '',
+  name: '',
+  icon: '',
   author: '',
+  version: '',
   link: '',
-  mod_type: '',
   desc: '',
-  preview: '',
-  previewPath: ''
+  previewPath: '',
+  // tag: '',
+
 });
 const loadingFlag = ref(false);
 
@@ -309,22 +547,21 @@ const selectPreViewImg = async () => {
 
 
   if (selectedPath) {
+    form.icon = selectedPath;
     form.preview = selectedPath;
     form.previewPath = convertFileSrc(selectedPath);
   }
 
 };
 const removeImg = () => {
+  form.icon = '';
   form.preview = '';
   form.previewPath = '';
 };
 
 const rules = reactive({
-  memo: [
+  name: [
     { required: true, min: 1, max: 255, message: '最少1个字符，最长255个字符', trigger: ['blur', 'change'] }
-  ],
-  mod_type: [
-    { required: true, message: '请选择mod类型', trigger: ['blur', 'change'] },
   ]
 })
 
@@ -335,13 +572,62 @@ const handleEdit = (row) => {
   }
 }
 
+import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 
-const onSubmit = async (formEl) => {
-  if (!gameDataDir.value || !modsDir.value) {
-    ElMessage.error('请先去设置里添加游戏data目录和mod存档目录');
-    return;
+
+async function openUploadModWindow() {
+  let label = 'upload';
+  const exists = await invoke('focus_if_webview_window_exists', { label });
+  if (!exists) {
+    // console.log('创建新窗口');
+    const webview = new WebviewWindow(label, {
+      url: '/upload',
+      width: 400,
+      height: 600,
+      title: 'Mod存档',
+      dragDropEnabled: true
+
+    });
+    webview.once('tauri://created', function () {
+      // webview successfully created
+    });
+    webview.once('tauri://error', function (e) {
+      // an error happened creating the webview
+      console.log(e);
+    });
+  } else {
+    // console.log('窗口已存在，已聚焦')
   }
 
+
+}
+
+const installMods = async () => {
+  const loading = ElLoading.service({
+    lock: true,
+    text: '正在安装游戏补丁...',
+    background: 'rgba(0, 0, 0, 0.7)',
+  })
+
+  try {
+    await invoke("install_mods", { env_id: Number(environment.value.id) });
+    ElMessage({
+      message: '安装成功',
+      type: 'success',
+    })
+  } catch (error) {
+    console.error("安装失败", error);
+    ElMessage.error(error || '安装失败')
+
+  } finally {
+    loading.close();
+    await getModsList();
+
+  }
+}
+
+
+const onSubmit = async (formEl) => {
   if (!formEl) return;
   await formEl.validate(async (valid, fields) => {
     if (valid) {
@@ -350,13 +636,15 @@ const onSubmit = async (formEl) => {
       try {
         let mod = modsData.value.find(x => x.id == form.id);
         let up_img_flag = true;
-        if (mod.preview == form.preview) {
-          console.log('图片无需更新');
+        if (mod?.icon == form.icon) {
+          // console.log('图片无需更新');
           up_img_flag = false;
         }
 
+        console.log(form);
+
         await invoke('up_mod_info', { mod_info: form, record_dir: modsDir.value, up_img_flag });
-        console.log('up_mod_info successfully!');
+        // console.log('up_mod_info successfully!');
         await getModsList();
         dialogFormVisible.value = false;
         ElMessage({
@@ -398,29 +686,42 @@ const modsDir = ref('');
 // 游戏data目录
 const gameDataDir = ref('');
 
+const listShowType = ref('grid');
+
+import { Store } from '@tauri-apps/plugin-store'
+import { tr } from 'element-plus/es/locales.mjs';
+
 // 挂载时获取设置参数里的各种目录
 onMounted(async () => {
   try {
-    const contents = await readTextFile('config.json', {
-      baseDir: BaseDirectory.AppConfig,
+    await listen('save-mods-complete', (event) => {
+      // console.log(event.payload);
+      getModsList();
     });
 
-    if (contents) {
-      const config = JSON.parse(contents);
-      modsDir.value = config.modsDir || '';
-      gameDataDir.value = config.gameDataDir || '';
 
-      if (!gameDataDir.value || !modsDir.value) {
-        ElMessage.error('请先去设置里添加游戏data目录和mod存档目录')
+    const store = await Store.load('config.json', { autoSave: false })
+    const storeGameMod = await store.get('game_mod');
+    // console.log(storeGameMod);
+    if (storeGameMod) {
+      for (const [key, value] of Object.entries(gameMod)) {
+        gameMod[key] = storeGameMod[key] || value;
       }
-    } else {
-      ElMessage.error('请先去设置里添加游戏data目录和mod存档目录')
     }
+
+    orderAscFlag.value = Number(localStorage.getItem("OrderAscFlag")) == 1 ? true : false;
+    listShowType.value = localStorage.getItem("ListShowType") ? localStorage.getItem("ListShowType") : 'grid';
+
+    await getEnvironmentList();
+    await getModsList();
+    setGridSort();
+    setListSort();
+
   } catch (error) {
 
   }
 
-  await getModsList();
+
 });
 
 
@@ -450,70 +751,14 @@ async function activeAllMods() {
   });
 }
 
-async function deploy() {
-  if (!modsDir.value || !gameDataDir.value) {
-    ElMessage.error('请先去设置里添加游戏data目录和mod存档目录');
-    return;
-  }
-
-  ElMessageBox.confirm(
-    '此操作将所有mod卸载后，将根据列表中的安装状态，重新进行mod安装，确定继续吗？',
-    '提示',
-    {
-      confirmButtonText: '确定',
-      cancelButtonText: '取消',
-      type: 'warning',
-    }
-  )
-    .then(async () => {
-      const loading = ElLoading.service({
-        lock: true,
-        text: '部署中...',
-        background: 'rgba(0, 0, 0, 0.7)',
-      })
-
-
-      let mod_activate_data = [];
-      modsData.value.forEach(element => {
-        mod_activate_data.push({
-          id: element.id,
-          activate: element.activate
-        })
-      });
-      // console.log(mod_activate_data);
-
-      try {
-        await invoke('deploy_mods', {
-          record_dir: modsDir.value,
-          data_dir: gameDataDir.value,
-          mode_type: current.value == '模型' ? 'model' : 'voice',
-          mod_activate_data
-        });
-
-        await getModsList();
-
-        ElMessage({
-          message: '部署成功',
-          type: 'success',
-        })
-      } catch (error) {
-        console.error('deploy mods err:', error);
-        ElMessage.error(error || '部署失败')
-
-      } finally {
-        loading.close();
-
-      }
-    })
-    .catch(() => {
-      ElMessage({
-        type: 'info',
-        message: '已取消',
-      })
-    })
+async function searchMod() {
+  await getModsList(search.value);
 }
 
-async function searchMod() {
+async function searchModByOrder() {
+  orderAscFlag.value = !orderAscFlag.value;
+  localStorage.setItem("OrderAscFlag", orderAscFlag.value ? "1" : "0");
+
   await getModsList(search.value);
 }
 
@@ -531,92 +776,137 @@ const openBrowser = async (url) => {
 
 // 打开mod对应的存档目录
 async function openDir(row) {
-  if (!modsDir.value) {
-    ElMessage.error('游戏存档目录未设置')
+  if (!gameMod.mods_store_path || !row.path) {
+    ElMessage.error('Mod存档目录未设置')
     return;
   }
   try {
-    let dir_path = await join(modsDir.value, row.name);
+    let dir_path = await join(gameMod.mods_store_path, row.path);
     await invoke('open_folder', { path: dir_path });
     // console.log('Folder opened successfully!');
   } catch (error) {
-    console.error('Failed to open folder:', error);
+    console.error('打开Mod目录失败:', error);
     ElMessage.error(error || 'Oops, this is a error message.')
 
   }
 }
 
+// 获取当前环境
+async function getEnvironmentList() {
+  try {
+    let env = await invoke('get_environment_list');
+    if (env.length == 0) return;
+    env.forEach(element => {
+      element.editName = element.name;
+      element.editFlag = false;
+    });
+    environmentList.value = env;
+    // console.log('env: ', environmentList.value);
+    let activateItem = env.find(x => x.activate == 1);
+    environment.value = activateItem ? activateItem : env[0];
+
+  } catch (error) {
+    console.error('获取当前环境变量失败:', error);
+    ElMessage.error(error || 'Oops, this is a error message.')
+
+  }
+}
+
+
 // 一键卸载
-const uninstallAllMods = async () => {
-  if (!gameDataDir.value) {
-    ElMessage.error('游戏data目录未设置');
+const uninstallMods = async () => {
+  if (!gameMod.game_data_path) {
+    ElMessage.error('游戏data目录未配置！');
     return;
   }
 
-  ElMessageBox.confirm(
-    '此操作将删除游戏data目录下，通过本软件安装的所有mod，确定继续吗？',
-    '提示',
-    {
-      confirmButtonText: '确定',
-      cancelButtonText: '取消',
-      type: 'warning',
-    }
-  )
-    .then(async () => {
+  const delete_all_flag = ref(false);
+
+  ElMessageBox({
+    title: '确认删除通过本软件安装的所有游戏补丁？',
+    message: () =>
+      h('div', null, [
+        h('span', null, '我还需要删除所有游戏补丁'),
+        h(ElSwitch, {
+          modelValue: delete_all_flag.value,
+          'onUpdate:modelValue': (val) => {
+            delete_all_flag.value = val
+          },
+        }),
+      ]),
+    showCancelButton: true,
+    confirmButtonText: '确定',
+    cancelButtonText: '取消',
+  }).then(async (action) => {
+    if (action == 'confirm') {
       const loading = ElLoading.service({
         lock: true,
-        text: '卸载中...',
+        text: '游戏补丁清除中...',
         background: 'rgba(0, 0, 0, 0.7)',
       })
 
       try {
-        let mod_type = current.value == '模型' ? 'model' : 'voice';
-        await invoke("uninstall_mods_all", { data_dir: gameDataDir.value, mod_type });
-        await getModsList();
-
+        await invoke("uninstall_mods", {
+          all_mod_flag: delete_all_flag.value ? 1 : 0
+        });
         ElMessage({
-          message: '卸载成功',
-          type: 'success',
+          message: '删除成功',
+          type: 'success'
         })
+
       } catch (error) {
-        console.error("Error uninstall all mods:", error);
-        ElMessage.error('卸载失败：' + String(error))
+        console.error("Error delete mod:", error);
+        ElMessage.error('删除失败：' + String(error))
 
       } finally {
         loading.close();
+        await getModsList();
 
       }
+    }
+  }).catch(() => {
+    ElMessage({
+      type: 'info',
+      message: '已取消',
     })
-    .catch(() => {
-      ElMessage({
-        type: 'info',
-        message: '已取消',
-      })
-    })
+  })
 }
 
 // 删除mod存档
 const deleteMod = async (row) => {
-  if (Number(row.activate) === 1) {
-    ElMessage.error('该mod正在使用，请先卸载后再删除');
-    return
-  }
-  if (!modsDir.value) {
-    ElMessage.error('未获取到mod存档目录');
+  // if (Number(row.activate) === 1) {
+  //   ElMessage.error('请先禁用再删除！');
+  //   return
+  // }
+
+  if (!gameMod.mods_store_path) {
+    ElMessage.error('未获取到Mod存档目录');
     return
   }
 
-  ElMessageBox.confirm(
-    '此操作将永久删除该Mod存档，确定继续吗？',
-    '提示',
-    {
-      confirmButtonText: '确定',
-      cancelButtonText: '取消',
-      type: 'warning',
-    }
-  )
-    .then(async () => {
+  if (!environment.value.id) {
+    ElMessage.error('未获取到环境变量Id');
+    return
+  }
 
+  const delete_file_flag = ref(false);
+  ElMessageBox({
+    title: '确认删除该环境下的Mod记录吗？',
+    message: () =>
+      h('div', null, [
+        h('span', null, '我还需要删除文件，删除前请自行备份。'),
+        h(ElSwitch, {
+          modelValue: delete_file_flag.value,
+          'onUpdate:modelValue': (val) => {
+            delete_file_flag.value = val
+          },
+        }),
+      ]),
+    showCancelButton: true,
+    confirmButtonText: '确定',
+    cancelButtonText: '取消',
+  }).then(async (action) => {
+    if (action == 'confirm') {
       const loading = ElLoading.service({
         lock: true,
         text: '删除中...',
@@ -624,13 +914,18 @@ const deleteMod = async (row) => {
       })
 
       try {
-        let dir_path = await join(modsDir.value, row.name);
-        await invoke("remove_dir_all", { dir_path, record_id: row.id });
-        getModsList();
+        await invoke("delete_one_mod", {
+          record_id: row.id,
+          env_id: Number(environment.value.id),
+          delete_file_flag: delete_file_flag.value ? 1 : 0,
+          mod_dir_name: row.path
+        });
         ElMessage({
           message: '删除成功',
           type: 'success'
         })
+        await getModsList();
+
       } catch (error) {
         console.error("Error delete mod:", error);
         ElMessage.error('删除失败：' + String(error))
@@ -639,13 +934,14 @@ const deleteMod = async (row) => {
         loading.close();
 
       }
+    }
+  }).catch(() => {
+    ElMessage({
+      type: 'info',
+      message: '已取消',
     })
-    .catch(() => {
-      ElMessage({
-        type: 'info',
-        message: '已取消',
-      })
-    })
+  })
+
 }
 
 // 清除过滤条件
@@ -655,13 +951,15 @@ const clearFilter = () => {
 
 // 过滤函数
 const filterHandler = (value, row) => {
-  console.log(value, row.activate);
+  // console.log(value, row.activate);
   return row.activate === value
 }
 
-const type = (row, column) => {
-  return row.mod_type === 'model' ? '模型' : '音频/杂项';
-}
+// const type = (row, column) => {
+//   return row.mod_type === 'model' ? '模型' : '音频/杂项';
+// }
+
+const orderAscFlag = ref(false);
 
 // 获取mod存档
 async function getModsList(name = '') {
@@ -675,74 +973,75 @@ async function getModsList(name = '') {
   })
 
   try {
-    let modeType = current.value == '模型' ? 'model' : 'voice';
-    let mods = await invoke("get_mod_records", { search: name, modeType });
-    mods.forEach(async element => {
+    let order_asc_flag = orderAscFlag.value ? 1 : 0;
+    let mods = await invoke("get_environment_mods_records", { env_id: Number(environment.value.id), search: name, order_asc_flag });
+    await Promise.allSettled(mods.map(async element => {
       let { preview, assetUrl } = await previewImg(element);
       element.preview = preview;
       element.previewPath = assetUrl;
-
-    });
+    }));
 
     modsData.value = mods;
-    ElMessage({
-      message: '获取列表成功',
-      type: 'success',
-      duration: 1000
-    })
     // console.log("get mod records:", modsData.value);
+
   } catch (error) {
     console.error("Error get records:", error);
     ElMessage.error('获取失败')
 
   } finally {
     loading.close();
-    getStatistics();
+    // getStatistics();
 
   }
 }
 
-// 获取mod被安装在data目录的名称
-async function getModDetail(row) {
+const selectModsVisible = ref(false);
+const closeSelectModsVisible = () => {
+  selectModsVisible.value = false;
+};
+
+const modsRecordsList = ref([]);
+
+// 获取mod存档
+async function getModsRecords() {
   try {
-    let files = await invoke("get_mod_install_files", { recordId: row.id });
-    row.files = files || [];
-    // console.log("get mod install files:", files);
+    modsRecordsList.value = [];
+    let mods = await invoke("get_mods_records_with_env_add_flag", { env_id: Number(environment.value.id) });
+    await Promise.allSettled(mods.map(async element => {
+      if (element.env_add_flag != 1) {
+        let { preview, assetUrl } = await previewImg(element);
+        modsRecordsList.value.push({
+          id: element.id,
+          name: element.name,
+          env_add_flag: element.env_add_flag,
+          preview,
+          previewPath: assetUrl
+        })
+      }
+    }));
+
+    if (modsRecordsList.value.length > 0) {
+      selectModsVisible.value = true;
+      // console.log("getModsRecordsWithEnv:", modsRecordsList.value);
+    } else {
+      ElMessage.error('暂无可添加Mod！')
+
+    }
   } catch (error) {
-    console.error("Error get mod install files:", error);
+    console.error("Error get records:", error);
     ElMessage.error('获取失败')
 
   } finally {
 
+
   }
-
-}
-
-// 测试添加
-const onAddItem = () => {
-  const maxId = modsData.value.reduce((max, current) => {
-    return current.id > max ? current.id : max;
-  }, -Infinity);
-  modsData.value.push({
-    id: Number(maxId) + 1,
-    memo: 'Tom',
-    mod_type: 'California',
-    activate: 'Los Angeles',
-    desc: 'No. 189, Grove St, Los Angeles',
-    author: 'CA 90036',
-  })
 }
 
 // 预览图片
 const previewImg = async (row) => {
-  if (modsDir.value && row.name && row.preview) {
-
-    let imgPath = await join(modsDir.value, row.name, row.preview);
-
+  if (gameMod.mods_store_path && row.path && row.icon) {
+    let imgPath = await join(gameMod.mods_store_path, row.path, row.icon);
     const assetUrl = convertFileSrc(imgPath);
-
-    // console.log('---imgPath---', assetUrl);
-
     return {
       assetUrl,
       preview: imgPath
@@ -759,25 +1058,58 @@ const previewImg = async (row) => {
 </script>
 
 <style scoped lang="scss">
+// 固定屏幕高度
 .container {
   display: flex;
   flex-direction: column;
   height: 100vh;
   box-sizing: border-box;
-  padding: 20px 20px 0 20px;
-  position: relative;
+  // padding: 20px 20px 0 20px;
+  // position: relative;
+}
+
+// 固定头部和底部高度
+.header,
+.footer {
+  background: #f5f5f5;
+  border-bottom: 1px solid #ddd;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding-left: 20px;
+  padding-right: 20px;
+}
+
+.header {
+  height: 50px;
+  border-top: 1px solid #ddd;
+  justify-content: space-between;
 }
 
 .footer {
-  padding: 4px;
-  // background-color: red;
+  height: 30px;
+  border-top: 1px solid #ddd;
+  justify-content: space-between;
 }
 
-.title {
-  font-size: 20px;
-  font-weight: bold;
-  margin-bottom: 10px;
+.text {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
 }
+
+// .content {
+//   flex: 1;
+//   overflow: auto;
+//   background: #fff;
+//   padding: 16px;
+// }
+
+// .title {
+//   font-size: 20px;
+//   font-weight: bold;
+//   margin-bottom: 10px;
+// }
 
 .image {
   min-width: 150px;
@@ -791,6 +1123,161 @@ const previewImg = async (row) => {
     position: absolute;
     right: -10px;
     top: -10px;
+  }
+}
+
+.sortable-ghost {
+  color: white;
+  background-color: skyblue !important;
+}
+
+// .card-grid {
+//   display: grid;
+//   grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+//   gap: 20px;
+//   padding: 20px;
+//   // height: 100%;
+//   // background-color: red;
+
+//   .card {
+//     background-color: #fff;
+//     border: 1px solid #eee;
+//     border-radius: 10px;
+//     overflow: hidden;
+//     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+//     transition: transform 0.2s ease;
+//     display: flex;
+//     flex-direction: column;
+
+//     // &:hover {
+//     //   transform: translateY(-4px);
+//     // }
+
+//     img {
+//       width: 100%;
+//       height: 160px;
+//       object-fit: cover;
+//     }
+
+//     .card-text {
+//       padding: 12px;
+//       font-size: 16px;
+//       text-align: center;
+
+//       h3 {
+//         margin: 0;
+//         font-size: 18px;
+//       }
+
+//       p {
+//         font-size: 14px;
+//         color: #666;
+//         margin-top: 6px;
+//       }
+//     }
+//   }
+// }
+
+.content-area {
+  padding: 16px;
+
+  .item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+
+    .text {
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      color: #333;
+      font-size: 0.9rem;
+    }
+  }
+
+  &.grid {
+    display: grid;
+    gap: 16px;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+
+    .item {
+      background: #f0f0f0;
+      border-radius: 6px;
+    }
+
+    .text {
+      padding: 6px;
+    }
+
+    .switch {
+      position: absolute;
+      top: 0;
+      right: 5px;
+    }
+
+    .install {
+      box-shadow: 0 0 6px 1px rgba(59, 130, 246, 0.3),
+        0 0 12px 3px rgba(96, 165, 250, 0.2);
+    }
+
+    .image-slot {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      width: 100%;
+      height: 100%;
+      background: var(--el-fill-color-light);
+      color: var(--el-text-color-secondary);
+      font-size: 30px;
+    }
+
+  }
+
+  &.list {
+    .item {
+      box-sizing: border-box;
+      flex-direction: row;
+      align-items: center;
+      width: 100%;
+      padding: 5px 20px;
+      border-top: 1px solid #ebeef5;
+
+      .text {
+        margin-top: 0;
+      }
+    }
+
+    .item:nth-child(odd) {
+      background-color: #FAFAFA;
+    }
+
+    .item:nth-child(even) {
+      background-color: #fff;
+    }
+
+    .item:hover {
+      background-color: #f5f7fa;
+    }
+
+    .install {
+      box-shadow: 0 0 6px 1px rgba(59, 130, 246, 0.3),
+        0 0 12px 3px rgba(96, 165, 250, 0.2);
+    }
+
+
+    .image-slot {
+      box-sizing: border-box;
+      width: 40px;
+      height: 40px;
+      text-align: center;
+      line-height: 40px;
+      border-radius: 50%;
+      background-color: #f0f0f0;
+      border: 1px solid #f0f0f0;
+      color: #999;
+
+    }
   }
 }
 </style>

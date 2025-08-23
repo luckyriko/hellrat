@@ -16,20 +16,38 @@
         作者：理（luckyriko@qq.com）
       </el-col>
       <el-col :span="24" class="row">
-        意见反馈：<el-link :underline="true" type="primary" @click="suggest()">bilibili</el-link>
+        QQ群：670106990
+      </el-col>
+      <el-col :span="24" class="row">
+        视频教程：<el-link :underline="true" type="primary" @click="suggest()">bilibili</el-link>
       </el-col>
       <el-col :span="24" class="row">
         版本发布&捐赠：<el-link :underline="true" type="primary" @click="donate()">爱发电</el-link>
       </el-col>
+
+      <h4>用户协议</h4>
       <el-col :span="24" class="row">
-        本软件免费，禁止商业用途。
+        本软件免费提供，禁止商业用途。
+      </el-col>
+
+
+      <h4>免责声明</h4>
+      <el-col :span="24" class="row">
+        通用性：本项目是作为一个闭源项目提供的，开发者在法律允许的范围内不对软件的功能性、安全性或适用性提供任何形式的明示或暗示的保证。
       </el-col>
       <el-col :span="24" class="row">
-        开发者不对因使用或无法使用本软件所造成的任何直接、间接、特殊、附带或后果性损害承担责任，包括但不限于数据丢失、业务中断或财务损失等，即使开发者已被告知可能发生此类损害。
+        无担保：用户明确理解并同意，使用本软件的风险完全由用户自己承担，软件以"现状"和"现有"基础提供。开发者不提供任何形式的担保，无论是明示还是暗示的，包括但不限于适销性、特定用途的适用性和非侵权的担保。
       </el-col>
       <el-col :span="24" class="row">
-        用户在使用本软件时，应自行承担使用风险。开发者不保证本软件完全无误，也不对任何错误、缺陷或功能缺失负责。用户应确保其使用本软件符合相关法律法规，并自行负责因使用本软件导致的任何后果。
+        风险承担：在任何情况下，开发者都不对任何直接的、间接的、偶然的、特殊的、惩罚性的或后果性的损害承担责任，包括但不限于使用本软件产生的数据丢失、业务中断、个人信息泄露或其他损害、损失，即使开发者已被告知可能发生此类损害。
       </el-col>
+      <el-col :span="24" class="row">
+        修改和版本：开发者有权在任何时间修改软件的功能或特性，以及本免责声明的任何部分，并且这些修改可能会以软件更新的形式体现。
+      </el-col>
+      <el-col :span="24" class="row">
+        最终解释权：本免责声明的最终解释权归开发者所有。
+      </el-col>
+
     </el-row>
   </div>
 </template>
@@ -59,7 +77,7 @@ const donate = async () => {
 }
 
 const suggest = async () => {
-  await open("https://www.bilibili.com/opus/1035770623780978689");
+  await open("https://space.bilibili.com/7387996/lists/4325372?type=season");
 
 }
 

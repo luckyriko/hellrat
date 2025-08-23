@@ -1,73 +1,83 @@
-use rusqlite::{Connection, ToSql, params, params_from_iter};
+use rusqlite::{Connection, OptionalExtension, ToSql, params, params_from_iter};
 extern crate dirs;
 use crate::config as my_config;
+use crate::mods::{GameMod, GameModData, GameModWithEnv};
 use anyhow::{Context, Result, anyhow};
 use serde::{Deserialize, Serialize};
 use std::fs;
 
-#[derive(Serialize, Deserialize, Debug)]
-pub struct GameMod {
-    pub id: Option<i64>,
-    pub name: String,
-    pub memo: String,
-    pub mod_type: String,
-    pub activate: bool,
-    pub author: String,
-    pub link: String,
-    pub desc: String,
-    pub preview: String,
-}
-
-#[derive(Serialize, Deserialize, Debug)]
-pub struct GameModData {
-    pub info: GameMod,
-    // pub no_array: Vec<String>,
-    pub files: Vec<String>,
-}
-
 #[tauri::command]
 pub fn db_operate_test() {}
 
-pub fn check_mod_activate(record_id: i64) -> Result<(), String> {
-    let conn = open_data_db().map_err(|e| format!("数据库连接失败: {}", e))?;
+pub fn check_mod_path(name: &str) -> Result<bool> {
+    let conn = open_data_db()?;
 
-    let mut stmt = conn
-        .prepare("SELECT activate FROM mods_records WHERE id = ?1")
-        .map_err(|e| format!("删除时查询安装状态失败: {}", e))?;
-    let activate: i64 = stmt
-        .query_row(params![record_id], |row| row.get(0))
-        .map_err(|e| format!("删除时查询安装状态失败: {}", e))?;
+    // let mut stmt = conn
+    //     .prepare("SELECT COUNT(*) as count FROM mods_records WHERE path = ?1")
+    //     .map_err(|e| format!("查询Mod路径是否存在失败: {}", e))?;
+    // let count: u32 = stmt
+    //     .query_row(params![name], |row| row.get(0))
+    //     .map_err(|e| format!("查询Mod路径是否存在失败: {}", e))?;
 
-    println!("activate:{}", activate);
-    if activate == 1 {
-        return Err("该mod正在使用，请先卸载后再删除".to_string());
-    }
-    Ok(())
+    // // println!("count:{}", count);
+    // if count == 0 { Ok(true) } else { Ok(false) }
+
+    let path: Option<String> = conn
+        .query_row(
+            "SELECT path FROM mods_records WHERE path = ?1",
+            [name],
+            |row| row.get(0),
+        )
+        .optional()?;
+
+    if !path.is_none() { Ok(true) } else { Ok(false) }
 }
 
-#[tauri::command]
-pub fn check_mod_name(name: &str) -> Result<bool, String> {
-    let conn = open_data_db().map_err(|e| format!("数据库连接失败: {}", e))?;
+pub fn check_mod_install_status(record_id: u64) -> Result<bool> {
+    let conn = open_data_db()?;
+    let file: Option<String> = conn
+        .query_row(
+            "SELECT file FROM mods_install_files WHERE record_id = ?",
+            [record_id],
+            |row| row.get(0),
+        )
+        .optional()?;
 
-    let mut stmt = conn
-        .prepare("SELECT COUNT(*) as count FROM mods_records WHERE name = ?1")
-        .map_err(|e| format!("查询是否有重复名称失败: {}", e))?;
-    let count: i32 = stmt
-        .query_row(params![name], |row| row.get(0))
-        .map_err(|e| format!("查询是否有重复名称失败: {}", e))?;
+    if !file.is_none() { Ok(true) } else { Ok(false) }
+}
 
-    // println!("count:{}", count);
-    if count == 0 { Ok(true) } else { Ok(false) }
+pub fn get_environment_mod_last_sort(env_id: u32) -> Result<Option<String>> {
+    let conn = open_data_db()?;
+    let sort: Option<String> = conn
+        .query_row(
+            "SELECT sort FROM environment_mods WHERE env_id = ? ORDER BY sort DESC LIMIT 1",
+            [env_id],
+            |row| row.get(0),
+        )
+        .optional()?;
+
+    Ok(sort)
+}
+
+pub fn get_environment_install_mods_num(env_id: u32) -> Result<u64> {
+    let conn = open_data_db()?;
+    let num: u64 = conn.query_row(
+        "SELECT count(*) as count FROM mods_install_files WHERE env_id = ? ",
+        [env_id],
+        |row| row.get(0),
+    )?;
+
+    Ok(num)
 }
 
 #[derive(Serialize)]
 pub struct Statistic {
-    records_activate_count: i32,
-    records_total_count: i32,
-    model_activate_count: i32,
-    model_total_count: i32,
-    voice_activate_count: i32,
-    voice_total_count: i32,
+    records_activate_count: u32,
+    records_total_count: u32,
+    model_activate_count: u32,
+    model_total_count: u32,
+    voice_activate_count: u32,
+    voice_total_count: u32,
 }
 
 #[tauri::command]
@@ -79,10 +89,10 @@ pub fn get_statistics() -> Result<Statistic, String> {
             "SELECT 
             (SELECT COUNT(*) FROM mods_records WHERE activate=1),
             (SELECT COUNT(*) FROM mods_records),
-            (SELECT COUNT(*) FROM mods_records WHERE mod_type = 'model' AND activate=1),
-            (SELECT COUNT(*) FROM mods_records WHERE mod_type = 'model'),
-            (SELECT COUNT(*) FROM mods_records WHERE mod_type = 'voice' AND activate=1 ),
-            (SELECT COUNT(*) FROM mods_records WHERE mod_type = 'voice')
+            (SELECT COUNT(*) FROM mods_records WHERE type = 'model' AND activate=1),
+            (SELECT COUNT(*) FROM mods_records WHERE type = 'model'),
+            (SELECT COUNT(*) FROM mods_records WHERE type = 'voice' AND activate=1 ),
+            (SELECT COUNT(*) FROM mods_records WHERE type = 'voice')
             ",
         )
         .map_err(|e| format!("预编译统计SQL失败: {}", e))?;
@@ -103,39 +113,164 @@ pub fn get_statistics() -> Result<Statistic, String> {
     Ok(data)
 }
 
-/// 查询mod安装的文件名
+#[derive(Serialize, Debug)]
+pub struct Environment {
+    id: u32,
+    name: String,
+    activate: u32,
+}
+
 #[tauri::command]
-pub fn get_mod_install_files(record_id: i64) -> Result<Vec<String>, String> {
-    let conn = open_data_db().map_err(|e| format!("数据库连接失败: {}", e))?;
+pub fn get_environment_list() -> Result<Vec<Environment>, String> {
+    let conn: Connection = open_data_db().map_err(|e| format!("数据库连接失败: {}", e))?;
 
     let mut stmt = conn
-        .prepare("SELECT file FROM mods_install_files WHERE record_id = ?1")
+        .prepare("SELECT * FROM environment_lists")
         .map_err(|e| format!("数据库创建查询失败: {}", e))?;
-    let files_iter = stmt
-        .query_map([record_id], |row| Ok(row.get::<_, String>(0)?))
+    let env_iter = stmt
+        .query_map([], |row| {
+            Ok(Environment {
+                id: row.get(0)?,
+                name: row.get(1)?,
+                activate: row.get(2)?,
+            })
+        })
         .map_err(|e| format!("数据查询失败: {}", e))?;
+
+    let env = env_iter
+        .inspect(|res| {
+            if let Err(e) = res {
+                eprintln!("get_environment_list Error: {}", e);
+            }
+        })
+        .filter_map(Result::ok)
+        .collect();
+    println!("env: {:?}", env);
+
+    Ok(env)
+}
+
+/// 更新环境状态
+#[tauri::command(rename_all = "snake_case")]
+pub fn update_environment_activate(id: u32) -> Result<(), String> {
+    let conn = open_data_db().map_err(|e| format!("数据库连接失败: {}", e))?;
+
+    conn.execute(
+        "UPDATE environment_lists SET activate = CASE WHEN id = ? THEN 1 ELSE 0 END",
+        params![id],
+    )
+    .map_err(|e| format!("更新失败: {}", e))?;
+
+    Ok(())
+}
+
+/// 更新环境状态
+#[tauri::command(rename_all = "snake_case")]
+pub fn update_environment_name(id: u32, name: &str) -> Result<(), String> {
+    let conn = open_data_db().map_err(|e| format!("数据库连接失败: {}", e))?;
+    conn.execute(
+        "UPDATE environment_lists SET name = ? WHERE id = ?",
+        params![name, id],
+    )
+    .map_err(|e| format!("更新失败: {}", e))?;
+
+    Ok(())
+}
+
+pub fn add_environment(name: &str) -> Result<()> {
+    let conn = open_data_db()?;
+    conn.execute(
+        "INSERT INTO environment_lists (name, activate) VALUES (?, ?)",
+        (name, 0),
+    )?;
+
+    Ok(())
+}
+
+pub fn copy_environment(id: u32, name: &str) -> Result<()> {
+    let mut conn = open_data_db()?;
+    let tx = conn.transaction()?;
+
+    let name = format!("{}_copy", name);
+    tx.execute(
+        "INSERT INTO environment_lists (name, activate) VALUES (?, ?)",
+        (&name, 0),
+    )?;
+
+    let last_env_id = tx.last_insert_rowid() as u32;
+    // println!("copy_environment last_env_id: {}", last_env_id);
+
+    tx.execute(
+        "INSERT OR IGNORE INTO environment_mods (record_id, env_id, options, activate, sort)
+        SELECT record_id, ?, options, activate, sort
+        FROM environment_mods
+        WHERE env_id = ?;",
+        (last_env_id, id),
+    )?;
+
+    tx.commit()?;
+    Ok(())
+}
+
+pub fn delete_environment(id: u32) -> Result<()> {
+    let mut conn = open_data_db()?;
+    let tx = conn.transaction()?;
+    tx.execute("DELETE FROM environment_lists WHERE id = ?", params![id])?;
+    tx.execute("DELETE FROM environment_mods WHERE env_id = ?", params![id])?;
+
+    tx.commit()?;
+    Ok(())
+}
+
+/// 查询该环境下此Mod的所有安装文件
+pub fn get_env_mod_install_files(env_id: u32, record_id: u64) -> Result<Vec<String>> {
+    let conn = open_data_db()?;
+
+    let mut stmt =
+        conn.prepare("SELECT file FROM mods_install_files WHERE record_id = ? AND env_id = ?")?;
+    let files_iter = stmt.query_map((record_id, env_id), |row| Ok(row.get::<_, String>(0)?))?;
 
     let files = files_iter.filter_map(Result::ok).collect();
 
     Ok(files)
 }
 
-/// 查询mod存档
-#[tauri::command]
-pub fn get_mod_records(mode_type: &str, search: &str) -> Result<Vec<GameMod>, String> {
+/// 查询该环境下添加的Mod列表
+#[tauri::command(rename_all = "snake_case")]
+pub fn get_environment_mods_records(
+    env_id: u32,
+    search: &str,
+    order_asc_flag: u8,
+) -> Result<Vec<GameMod>, String> {
     let conn = open_data_db().map_err(|e| format!("数据库连接失败: {}", e))?;
 
-    let mut sql = String::from("SELECT * FROM mods_records WHERE mod_type = ?1 ORDER BY id ASC");
+    let mut sql = String::from(
+        "SELECT m.id, m.uuid, m.name, m.path, m.tag, m.author, m.link, m.desc, m.icon, e.sort, m.type, m.version, e.id as env_mod_id, e.activate,
+            CASE WHEN EXISTS (
+                SELECT 1 FROM mods_install_files f
+                WHERE f.record_id = e.record_id AND f.env_id = ?
+            ) THEN 1 ELSE 0 END AS env_mod_install_flag 
+            FROM environment_mods e 
+            LEFT JOIN mods_records m ON m.id = e.record_id 
+            WHERE e.env_id = ? ",
+    );
     let mut params: Vec<&dyn ToSql> = Vec::new();
-    params.push(&mode_type);
-    let like_query = format!("%{}%", search);
+    params.push(&env_id);
+    params.push(&env_id);
 
+    let like_query = format!("%{}%", search);
     if !search.is_empty() {
-        sql = String::from(
-            "SELECT * FROM mods_records WHERE mod_type = ?1 AND memo LIKE ?2 ORDER BY id ASC",
-        );
+        sql += " AND m.name LIKE ?";
         params.push(&like_query);
     }
+
+    if order_asc_flag == 1 {
+        sql += " ORDER BY e.sort ASC";
+    } else {
+        sql += " ORDER BY e.sort DESC";
+    }
+
+    // println!("get_environment_mods_records: {sql}");
 
     let mut stmt = conn
         .prepare(&sql)
@@ -143,32 +278,231 @@ pub fn get_mod_records(mode_type: &str, search: &str) -> Result<Vec<GameMod>, St
     let records_iter = stmt
         .query_map(params_from_iter(params), |row| {
             Ok(GameMod {
-                id: row.get(0).ok(),
-                name: row.get(1)?,
-                memo: row.get(2)?,
-                mod_type: row.get(3)?,
-                activate: row.get(4)?,
-                author: row.get(5)?,
-                link: row.get(6)?,
-                desc: row.get(7)?,
-                preview: row.get(8)?,
+                id: row.get("id")?,
+                uuid: row.get("uuid")?,
+                name: row.get("name")?,
+                path: row.get("path")?,
+                tag: row.get("tag")?,
+                author: row.get("author")?,
+                link: row.get("link")?,
+                desc: row.get("desc")?,
+                icon: row.get("icon")?,
+                sort: row.get("sort")?,
+                r#type: row.get("type")?,
+                version: row.get("version")?,
+                options: String::new(),
+                activate: row.get("activate")?,
+                env_mod_id: row.get("env_mod_id").ok(),
+                env_mod_options: None,
+                env_mod_install_flag: row.get("env_mod_install_flag").ok(),
             })
         })
         .map_err(|e| format!("数据查询失败: {}", e))?;
 
-    let records = records_iter.filter_map(Result::ok).collect();
+    let records = records_iter
+        .inspect(|res| {
+            if let Err(e) = res {
+                eprintln!("get_environment_mods_records Error: {}", e);
+            }
+        })
+        .filter_map(Result::ok)
+        .collect();
+    // println!("records: {:?}", records);
 
     Ok(records)
 }
 
+/// 查询mod存档
+#[tauri::command(rename_all = "snake_case")]
+pub fn get_mods_records_with_env_add_flag(env_id: u32) -> Result<Vec<GameModWithEnv>, String> {
+    let conn = open_data_db().map_err(|e| format!("数据库连接失败: {}", e))?;
+
+    let sql = String::from(
+        "SELECT m.id, m.name, m.path, m.icon,
+            CASE WHEN EXISTS (
+                SELECT 1 FROM environment_mods e
+                WHERE e.record_id = m.id AND e.env_id = ?
+            ) THEN 1 ELSE 0 END AS env_add_flag 
+            FROM mods_records m",
+    );
+    let mut params: Vec<&dyn ToSql> = Vec::new();
+    params.push(&env_id);
+
+    let mut stmt = conn
+        .prepare(&sql)
+        .map_err(|e| format!("数据库创建查询失败: {}", e))?;
+    let records_iter = stmt
+        .query_map(params_from_iter(params), |row| {
+            Ok(GameModWithEnv {
+                id: row.get("id")?,
+                name: row.get("name")?,
+                path: row.get("path")?,
+                icon: row.get("icon")?,
+                env_add_flag: row.get("env_add_flag")?,
+            })
+        })
+        .map_err(|e| format!("数据查询失败: {}", e))?;
+
+    let records = records_iter
+        .inspect(|res| {
+            if let Err(e) = res {
+                eprintln!("get_mods_records_with_env_add_flag Error: {}", e);
+            }
+        })
+        .filter_map(Result::ok)
+        .collect();
+    // println!("records: {:?}", records);
+
+    Ok(records)
+}
+
+pub fn get_mods_records_by_ids(ids: Vec<u64>) -> Result<Vec<GameMod>> {
+    let conn = open_data_db()?;
+    let placeholders = ids.iter().map(|_| "?").collect::<Vec<_>>().join(", ");
+    let sql = format!("SELECT * FROM mods_records WHERE id IN ({})", placeholders);
+
+    let mut stmt = conn.prepare(&sql)?;
+    let records_iter = stmt.query_map(params_from_iter(ids), |row| {
+        Ok(GameMod {
+            id: row.get("id")?,
+            uuid: row.get("uuid")?,
+            name: row.get("name")?,
+            path: row.get("path")?,
+            tag: row.get("tag")?,
+            author: row.get("author")?,
+            link: row.get("link")?,
+            desc: row.get("desc")?,
+            icon: row.get("icon")?,
+            sort: String::new(),
+            r#type: row.get("type")?,
+            version: row.get("version")?,
+            options: row.get("options")?,
+            activate: 0,
+            env_mod_id: None,
+            env_mod_options: None,
+            env_mod_install_flag: None,
+        })
+    })?;
+
+    let records = records_iter
+        .inspect(|res| {
+            if let Err(e) = res {
+                eprintln!("get_mods_records_by_ids Error: {}", e);
+            }
+        })
+        .filter_map(Result::ok)
+        .collect();
+    // println!("records: {:?}", records);
+
+    Ok(records)
+}
+
+pub fn add_mods_to_environment(env_id: u32, mods: Vec<GameMod>, sorts: Vec<String>) -> Result<()> {
+    let mut conn = open_data_db()?;
+    let tx = conn.transaction()?;
+    {
+        // 预编译 SQL
+        let mut stmt = tx.prepare("INSERT OR IGNORE INTO environment_mods (record_id, env_id, options, activate, sort) VALUES (?, ?, ?, ?, ?)")?;
+
+        for (i, gm) in mods.iter().enumerate() {
+            stmt.execute(rusqlite::params![gm.id, env_id, gm.options, 0, sorts[i]])?;
+        }
+    } // stmt 在这里 drop，tx 不再被借用
+    tx.commit()?;
+
+    Ok(())
+}
+
+/// 查询mod详情
+pub fn get_env_mod_info(id: u64, env_id: u32) -> Result<GameMod> {
+    let conn = open_data_db()?;
+    let record = conn
+        .query_row(
+            "SELECT m.id, m.uuid, m.name, m.path, m.tag, m.author, m.link, m.desc, m.icon, e.sort, m.type, m.version, e.id as env_mod_id, e.activate, e.options as env_mod_options,
+                    CASE WHEN EXISTS (
+                        SELECT 1 FROM mods_install_files f
+                        WHERE f.record_id = e.record_id AND f.env_id = ?
+                    ) THEN 1 ELSE 0 END AS env_mod_install_flag 
+                FROM environment_mods e LEFT JOIN mods_records m ON m.id = e.record_id 
+                WHERE m.id = ? AND e.env_id = ? ",
+            params![env_id, id, env_id],
+            |row| {
+                Ok(GameMod {
+                    id: row.get("id")?,
+                    uuid: row.get("uuid")?,
+                    name: row.get("name")?,
+                    path: row.get("path")?,
+                    tag: row.get("tag")?,
+                    author: row.get("author")?,
+                    link: row.get("link")?,
+                    desc: row.get("desc")?,
+                    icon: row.get("icon")?,
+                    sort: row.get("sort")?,
+                    r#type: row.get("type")?,
+                    version: row.get("version")?,
+                    options: String::new(),
+                    activate: row.get("activate")?,
+                    env_mod_id: row.get("env_mod_id").ok(),
+                    env_mod_options : row.get("env_mod_options").ok(),
+                    env_mod_install_flag: row.get("env_mod_install_flag").ok(),
+                })
+            },
+        )?;
+    Ok(record)
+}
+
+/// 查询已激活的环境Mods
+pub fn get_environment_activate_mods(
+    env_id: u32,
+    mods_install_priority: &str,
+) -> anyhow::Result<Vec<GameMod>> {
+    let conn = open_data_db()?;
+
+    let mut sql = String::from(
+        "SELECT m.id, m.name, m.path, m.type, e.id as env_mod_id, e.options as env_mod_options 
+        FROM environment_mods e 
+        LEFT JOIN mods_records m ON e.record_id = m.id 
+        WHERE e.env_id = ? AND e.activate = 1 
+        ORDER BY e.sort ",
+    );
+
+    sql += mods_install_priority;
+
+    let mut stmt = conn.prepare(&sql)?;
+    let mods_iter = stmt.query_map([env_id], |row| {
+        Ok(GameMod {
+            id: row.get("id")?,
+            name: row.get("name")?,
+            path: row.get("path")?,
+            r#type: row.get("type")?,
+            activate: 1,
+            env_mod_id: row.get("env_mod_id").ok(),
+            env_mod_options: row.get("env_mod_options").ok(),
+            ..Default::default()
+        })
+    })?;
+
+    let mods = mods_iter
+        .inspect(|res| {
+            if let Err(e) = res {
+                eprintln!("get_environment_activate_mods Error: {}", e);
+            }
+        })
+        .filter_map(Result::ok)
+        .collect();
+
+    Ok(mods)
+}
+
 /// 获取所有安装文件
-pub fn get_all_mods_install_files(mod_type: &str) -> Result<Vec<String>> {
+pub fn get_all_mods_install_files() -> Result<Vec<String>> {
     let conn = open_data_db().context("数据库连接失败")?;
 
     let mut stmt = conn
-        .prepare("SELECT file FROM mods_install_files AS files LEFT JOIN mods_records AS record ON files.record_id = record.id WHERE record.mod_type = ?1").context("创建查询失败")?;
+        .prepare("SELECT file FROM mods_install_files")
+        .context("创建查询失败")?;
     let files_iter = stmt
-        .query_map([mod_type], |row| Ok(row.get::<_, String>(0)?))
+        .query_map([], |row| Ok(row.get::<_, String>(0)?))
         .context("查询失败")?;
 
     let files = files_iter.filter_map(Result::ok).collect();
@@ -177,81 +511,146 @@ pub fn get_all_mods_install_files(mod_type: &str) -> Result<Vec<String>> {
 }
 
 /// 更新mod存档安装状态
-fn update_mod_record_activate(conn: &Connection, game_mod: &GameModData) -> Result<i64> {
-    let id = game_mod.info.id.unwrap_or(0);
-    conn.execute(
-        "UPDATE mods_records SET activate = ?1 WHERE id = ?2",
-        (u8::from(*(&game_mod.info.activate)), &id),
-    )?;
+// fn update_mod_record_activate(conn: &Connection, game_mod: &GameModData) -> Result<u64> {
+//     let id = game_mod.info.id;
+//     conn.execute(
+//         "UPDATE mods_records SET activate = ?1 WHERE id = ?2",
+//         (&game_mod.info.activate, &id),
+//     )?;
 
-    Ok(id)
+//     Ok(id)
+// }
+
+/// 更新环境mod安装状态
+#[tauri::command(rename_all = "snake_case")]
+pub fn update_environment_mod_activate(id: u64, activate: u8) -> Result<(), String> {
+    let conn = open_data_db().map_err(|e| format!("数据库连接失败: {}", e))?;
+
+    conn.execute(
+        "UPDATE environment_mods SET activate = ? WHERE id = ?",
+        (activate, id),
+    )
+    .map_err(|e| format!("更新失败: {}", e))?;
+
+    Ok(())
+}
+
+/// 更新环境mod配置
+#[tauri::command(rename_all = "snake_case")]
+pub fn update_environment_mod_options(id: u64, options: &str) -> Result<(), String> {
+    let conn = open_data_db().map_err(|e| format!("数据库连接失败: {}", e))?;
+
+    conn.execute(
+        "UPDATE environment_mods SET options = ? WHERE id = ?",
+        (options, id),
+    )
+    .map_err(|e| format!("更新失败: {}", e))?;
+
+    Ok(())
+}
+
+/// 更新环境mod排序值
+pub fn update_environment_mod_sort(id: u64, sort: &str) -> Result<(), String> {
+    let conn = open_data_db().map_err(|e| format!("数据库连接失败: {}", e))?;
+
+    conn.execute(
+        "UPDATE environment_mods SET sort = ? WHERE id = ?",
+        (sort, id),
+    )
+    .map_err(|e| format!("更新失败: {}", e))?;
+
+    Ok(())
 }
 
 /// 更新mod存档信息
 pub fn update_mod_record_info(game_mod: &GameMod) -> Result<()> {
     let conn = open_data_db()?;
-    let id = game_mod.id.unwrap_or(0);
+    let id = game_mod.id;
     conn.execute(
-        "UPDATE mods_records SET memo = ?1,mod_type = ?2,author = ?3,link = ?4,desc = ?5,preview = ?6 WHERE id = ?7",
-        (&game_mod.memo, &game_mod.mod_type, &game_mod.author, &game_mod.link, &game_mod.desc, &game_mod.preview, &id),
+        "UPDATE mods_records SET name = ?, version = ?, author = ?,link = ?,desc = ?,icon = ? WHERE id = ?",
+        (&game_mod.name, &game_mod.version, &game_mod.author, &game_mod.link, &game_mod.desc, &game_mod.icon, id),
     )?;
 
     Ok(())
 }
 
 /// 添加mod存档
-fn add_mod_record(conn: &Connection, game_mod: &GameModData) -> Result<i64> {
+fn add_mod_record(conn: &Connection, game_mod: &GameModData) -> Result<u64> {
     conn.execute(
-        "INSERT INTO mods_records (name, memo, mod_type, activate, author, link, desc, preview) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
-        (&game_mod.info.name, &game_mod.info.name, &game_mod.info.mod_type, u8::from(*(&game_mod.info.activate)) , &game_mod.info.author, &game_mod.info.link, &game_mod.info.desc, &game_mod.info.preview),
+        "INSERT INTO mods_records (uuid, name, path, type, author, link, desc, icon, version, options) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)",
+        (&game_mod.info.uuid, &game_mod.info.name, &game_mod.info.path, &game_mod.info.r#type, &game_mod.info.author, &game_mod.info.link, &game_mod.info.desc, &game_mod.info.icon, &game_mod.info.version, &game_mod.info.options),
     )?;
-    let last_record_id = conn.last_insert_rowid();
+    let last_record_id = conn.last_insert_rowid() as u64;
     // println!("last_record_id: {last_record_id}");
 
     Ok(last_record_id)
 }
 
-/// 从数据库删除一个mod存档
-pub fn del_one_mod_record(record_id: i64) -> Result<()> {
-    let conn = open_data_db()?;
-
-    conn.execute("DELETE FROM mods_records WHERE id = ?1", params![record_id])?;
-
+fn add_environment_mod(
+    conn: &Connection,
+    record_id: u64,
+    env_id: u32,
+    activate: u8,
+    options: &str,
+    sort: &str,
+) -> Result<u64> {
     conn.execute(
-        "DELETE FROM mods_install_files WHERE record_id = ?1",
-        params![record_id],
+        "INSERT INTO environment_mods (record_id, env_id, options, activate, sort) VALUES (?, ?, ?, ?, ?)",
+        (record_id, env_id, options, activate, sort),
     )?;
+    let last_env_mod_id = conn.last_insert_rowid() as u64;
+    // println!("last_env_mod_id: {last_env_mod_id}");
 
+    Ok(last_env_mod_id)
+}
+
+/// 删除一个mod
+pub fn delete_one_mod(record_id: u64, env_id: u32, delete_file_flag: u8) -> Result<()> {
+    let mut conn = open_data_db()?;
+    let tx = conn.transaction()?;
+    if delete_file_flag == 0 {
+        // 只删除环境Mod记录
+        tx.execute(
+            "DELETE FROM environment_mods WHERE record_id = ? AND env_id = ?",
+            params![record_id, env_id],
+        )?;
+    } else {
+        // 删除所有记录
+        tx.execute(
+            "DELETE FROM environment_mods WHERE record_id = ?",
+            params![record_id],
+        )?;
+
+        tx.execute("DELETE FROM mods_records WHERE id = ?", params![record_id])?;
+    }
+    tx.commit()?;
     Ok(())
 }
 
-/// 一键卸载：删除所有mods_install_files安装记录，mods_records所有activate置为0
-pub fn uninstall_all_mod(mod_type: &str) -> Result<()> {
+/// 一键卸载：删除所有mods_install_files安装记录
+pub fn uninstall_all_mods() -> Result<()> {
     let mut conn = open_data_db()?;
     let tx = conn.transaction()?;
 
-    tx.execute(
-        "UPDATE mods_records SET activate = 0 WHERE mod_type = ?1 ",
-        params![mod_type],
-    )?;
+    // 无需改变环境Mod的activate状态，以方便重新安装（install_mods接口调用需要根据activate状态进行安装
+    // tx.execute("UPDATE environment_mods SET activate = 0;", params![])?;
 
-    tx.execute(
-        "DELETE FROM mods_install_files WHERE record_id IN ( SELECT id FROM mods_records WHERE mod_type = ?1)", params![mod_type]
-    )?;
+    tx.execute("DELETE FROM mods_install_files;", params![])?;
     tx.commit()?;
     Ok(())
 }
 
 /// 记录mod所安装的文件
-fn add_mod_install_files(conn: &Connection, game_mod: &GameModData, record_id: i64) -> Result<()> {
-    for file in &game_mod.files {
-        println!("add_mod_install_files：{}", file);
-        conn.execute(
-            "INSERT INTO mods_install_files (record_id, file ) VALUES (?1, ?2)",
-            (record_id, file),
+pub fn add_mod_install_files(record_id: u64, env_id: u32, files: &Vec<String>) -> Result<()> {
+    let mut conn = open_data_db()?;
+    let tx = conn.transaction()?;
+    for file in files {
+        tx.execute(
+            "INSERT INTO mods_install_files (record_id, env_id, file ) VALUES (?, ?, ?)",
+            (record_id, env_id, file),
         )?;
     }
-
+    tx.commit()?;
     Ok(())
 }
 
@@ -260,29 +659,37 @@ pub fn update_mod(game_mod: GameModData) -> Result<()> {
     let tx = conn.transaction()?;
 
     // 存档记录
-    let record_id = update_mod_record_activate(&tx, &game_mod)?; // tx causes rollback if this fails
+    // let record_id = update_mod_record_activate(&tx, &game_mod)?;
 
     // 安装记录
-    if game_mod.info.activate {
-        add_mod_install_files(&tx, &game_mod, record_id)?; // tx causes rollback if this fails
-    }
+    // if game_mod.info.activate == 1 {
+    //     add_mod_install_files(&tx, &game_mod, record_id)?;
+    // }
 
     tx.commit()?;
     Ok(())
 }
 
-pub fn add_mod(game_mod: GameModData) -> Result<()> {
+pub fn add_mod(game_mod: GameModData, env_id: u32) -> Result<()> {
     let mut conn = open_data_db()?;
     let tx = conn.transaction()?;
 
     // 存档记录
-    let record_id = add_mod_record(&tx, &game_mod)?; // tx causes rollback if this fails
+    let record_id = add_mod_record(&tx, &game_mod)?;
+
+    let _ = add_environment_mod(
+        &tx,
+        record_id,
+        env_id,
+        game_mod.info.activate,
+        &game_mod.info.options,
+        &game_mod.info.sort,
+    )?;
 
     // 安装记录
-    if game_mod.info.activate {
-        // let install_id = add_mod_install(&tx, &game_mod, record_id)?; // tx causes rollback if this fails
-        add_mod_install_files(&tx, &game_mod, record_id)?; // tx causes rollback if this fails
-    }
+    // if game_mod.info.activate == 1 {
+    //     add_mod_install_files(&tx, &game_mod, record_id)?;
+    // }
 
     tx.commit()?;
     Ok(())
@@ -301,15 +708,24 @@ pub fn create_db_table_if_not_exists() -> Result<()> {
     conn.execute(
         "CREATE TABLE IF NOT EXISTS mods_records (
             id          INTEGER PRIMARY KEY AUTOINCREMENT,
+            uuid        TEXT NOT NULL DEFAULT '',
             name        TEXT NOT NULL,
-            memo        TEXT NOT NULL,
-            mod_type    TEXT NOT NULL,
-            activate    INTEGER NOT NULL,
-            author      TEXT,
-            link        TEXT,
-            desc        TEXT,
-            preview     TEXT
+            path        TEXT NOT NULL,
+            tag         TEXT NOT NULL DEFAULT '',
+            author      TEXT NOT NULL DEFAULT '',
+            link        TEXT NOT NULL DEFAULT '',
+            desc        TEXT NOT NULL DEFAULT '',
+            icon        TEXT NOT NULL DEFAULT '',
+            type        INTEGER NOT NULL,
+            options     TEXT NOT NULL DEFAULT '',
+            version     TEXT NOT NULL DEFAULT '',
+            add_time    INTEGER NOT NULL DEFAULT 0,
+            up_time    INTEGER NOT NULL DEFAULT 0
         )",
+        (),
+    )?;
+    conn.execute(
+        "CREATE UNIQUE INDEX IF NOT EXISTS unique_mod_path ON mods_records(path);",
         (),
     )?;
 
@@ -325,21 +741,24 @@ pub fn create_db_table_if_not_exists() -> Result<()> {
         (),
     )?;
     conn.execute(
-        "CREATE INDEX IF NOT EXISTS idx_record_id_env_id ON mods_install_files(record_id, env_id)",
+        "CREATE INDEX IF NOT EXISTS idx_install_env_mod ON mods_install_files(record_id, env_id)",
         (),
     )?;
 
     // 环境切换：用于快速切换不同环境下的mod状态
     conn.execute(
-        "CREATE TABLE IF NOT EXISTS environment_active_mods (
+        "CREATE TABLE IF NOT EXISTS environment_mods (
             id          INTEGER PRIMARY KEY AUTOINCREMENT,
             record_id   INTEGER NOT NULL,
-            env_id      INTEGER NOT NULL
+            env_id      INTEGER NOT NULL,
+            options     TEXT NOT NULL DEFAULT '',
+            activate    INTEGER NOT NULL DEFAULT 0,
+            sort        TEXT NOT NULL DEFAULT ''
         )",
         (),
     )?;
     conn.execute(
-        "CREATE INDEX IF NOT EXISTS idx_record_id_env_id ON environment_active_mods(record_id, env_id)",
+        "CREATE UNIQUE INDEX IF NOT EXISTS unique_env_mod ON environment_mods(record_id, env_id)",
         (),
     )?;
 
@@ -347,16 +766,17 @@ pub fn create_db_table_if_not_exists() -> Result<()> {
     conn.execute(
         "CREATE TABLE IF NOT EXISTS environment_lists (
             id          INTEGER PRIMARY KEY AUTOINCREMENT,
-            name        TEXT NOT NULL
+            name        TEXT NOT NULL,
+            activate    INTEGER NOT NULL
         )",
         (),
     )?;
     conn.execute(
-        "CREATE UNIQUE INDEX IF NOT EXISTS idx_unique_name ON environment_lists(name);",
+        "CREATE UNIQUE INDEX IF NOT EXISTS unique_env_name ON environment_lists(name);",
         (),
     )?;
     conn.execute(
-        "INSERT OR IGNORE INTO environment_lists(name) VALUES('default');",
+        "INSERT OR IGNORE INTO environment_lists(name, activate) VALUES('default', 1);",
         (),
     )?;
 
@@ -367,31 +787,27 @@ pub fn open_data_db() -> Result<Connection> {
     // v1 com.luckyriko.helldivers2
     // v2 com.luckyriko.hellrat
 
-    let app_identifier = my_config::get_identifier().unwrap_or("666".into());
-    println!("db.rs: app_identifier值是 {}", app_identifier);
+    let app_identifier = my_config::get_identifier().unwrap_or("com.luckyriko.hellrat".into());
+    // println!("db.rs: app_identifier值是 {}", app_identifier);
 
     if let Some(mut db_path) = dirs::config_dir() {
         db_path.push(app_identifier);
         db_path.push("db");
-        let path = db_path.to_string_lossy().to_string();
 
         if !db_path.exists() {
-            // 使用 create_dir_all 创建所有需要的嵌套目录
-            fs::create_dir_all(path)?;
-            // println!("Directory created");
-        } else {
-            // println!("Directory already exists");
+            fs::create_dir_all(&db_path)?;
         }
 
-        // sqlite3的db文件路径=db_path
+        // sqlite3的db文件路径
         db_path.push("data.db");
-        // println!("{:?}", db_path);
+        println!("{:?}", db_path);
+
         let path = db_path.to_string_lossy().to_string();
         let conn = Connection::open(path).context("Failed to open data.db")?;
 
         Ok(conn)
     } else {
-        Err(anyhow!("Failed to get appConfigDir"))
+        Err(anyhow!("获取用户config_dir失败"))
     }
 }
 

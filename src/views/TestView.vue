@@ -1,11 +1,9 @@
 <template>
   <div>
-    <!-- <div data-tauri-drag-region style="height: 200px;">
-      dsadsa
-    </div> -->
-    <div ref="drop" style="height: 200px;width: 100%;background-color: red;">
+
+    <!-- <div ref="drop" style="height: 200px;width: 100%;background-color: red;">
       拖动至此区域上传
-    </div>
+    </div> -->
     <el-table data-tauri-drag-region :data="tableData" id="dragTable" border style="width: 800px;">
       <el-table-column prop="date" label="Date" width="180" />
       <el-table-column prop="name" label="Name" width="180" />
@@ -20,16 +18,8 @@
     </el-table>
 
     <div @click="createWin">创建窗口</div>
-    <div @click="createKeyboard">中文输入</div>
 
-    <!-- <div class="drop-zone" @dragover.prevent @drop="handleDrop">
-      <p>将文件拖到这里上传</p>
-      <ul>
-        <li v-for="(f, index) in filePaths" :key="index">
-          {{ f }}
-        </li>
-      </ul>
-    </div> -->
+
   </div>
 </template>
 
@@ -47,30 +37,10 @@ async function createWin(params) {
   console.log('createWin');
   const webview = new WebviewWindow('upload', {
     url: '/upload',
-    width: 1200,
-    height: 800,
+    width: 400,
+    height: 600,
     dragDropEnabled: true
-
-  });
-  webview.once('tauri://created', function () {
-    // webview successfully created
-  });
-  webview.once('tauri://error', function (e) {
-    // an error happened creating the webview
-    console.log(e);
-  });
-
-
-}
-async function createKeyboard(params) {
-  console.log('createKeyboard');
-  const webview = new WebviewWindow('keyboard', {
-    url: '/keyboard',
-    width: 600,
-    height: 60,
-    dragDropEnabled: true,
-    x: 1024,
-    y: 800
+    
   });
   webview.once('tauri://created', function () {
     // webview successfully created
@@ -84,28 +54,6 @@ async function createKeyboard(params) {
 }
 
 
-
-
-
-
-const filePaths = ref([])
-
-function handleDrop(event) {
-  event.preventDefault()
-
-  const files = event.dataTransfer?.files
-  if (!files || files.length === 0) return
-
-  for (const file of files) {
-    // Tauri 中的 file.path 是可用的！
-    filePaths.value.push(file.path ?? file.name)
-    console.log(file);
-
-  }
-
-
-  // ✅ 可以在这里调用后端 API 保存文件、移动文件等操作
-}
 
 let unlisten = null;
 function setSort() {
@@ -157,7 +105,8 @@ onMounted(async () => {
     } else if (event.payload.type === 'drop') {
       console.log('User dropped', event.payload.paths);
       let zipPath = event.payload.paths[0];
-      unzipFile(zipPath)
+      console.log('--event.payload.paths---', event.payload.paths);
+      // unzipFile(zipPath)
     } else {
       console.log('File drop cancelled');
     }

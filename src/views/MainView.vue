@@ -77,17 +77,17 @@ const ddup = async () => {
   <div class="page">
     <div class="left">
       <header>
-        <!-- <div class="logo-text">Mods管理器</div> -->
         <div class="logo-text">
-          <img alt="app logo" class="logo" src="@src/assets/shushu.png" width="40" height="40" />
+          <img alt="HellRat" class="logo" src="@src/assets/shushu.png" width="40" height="40" />
+          <span>HellRat</span>
         </div>
       </header>
       <nav>
         <RouterLink to="/home" class="nav-link" active-class="active">列表</RouterLink>
-        <RouterLink to="/add" class="nav-link" active-class="active">安装</RouterLink>
+        <!-- <RouterLink to="/add" class="nav-link" active-class="active">安装</RouterLink> -->
         <!-- <RouterLink to="/import" class="nav-link">导入</RouterLink> -->
         <RouterLink to="/setting" class="nav-link" active-class="active">设置</RouterLink>
-        <RouterLink to="/help" class="nav-link" active-class="active">帮助</RouterLink>
+        <!-- <RouterLink to="/help" class="nav-link" active-class="active">帮助</RouterLink> -->
         <RouterLink to="/about" class="nav-link" active-class="active">关于</RouterLink>
         <!-- <RouterLink to="/test" class="nav-link" active-class="active">测试</RouterLink> -->
         <!-- <RouterLink to="/upload" class="nav-link" active-class="active">shangchuan</RouterLink> -->
@@ -107,9 +107,6 @@ const ddup = async () => {
       </main>
     </div>
   </div>
-  <!-- <footer>
-    <HelloWorld msg="You did it!" />
-  </footer> -->
 </template>
 
 <style scoped lang="scss">
@@ -124,12 +121,15 @@ const ddup = async () => {
     position: relative;
 
     .logo-text {
+      box-sizing: border-box;
+      padding: 2px 0;
       width: 100px;
-      height: 40px;
       background-color: skyblue;
       text-align: center;
-      line-height: 40px;
-      color: purple;
+      color: #333;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
     }
 
     nav {

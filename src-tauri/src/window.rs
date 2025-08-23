@@ -38,26 +38,23 @@ impl Default for WebviewWindowParams {
 #[tauri::command(async)]
 pub async fn create_webview_window(app_handle: AppHandle, params: WebviewWindowParams) {
     // println!("{:#?}", params);
+    let webview_window = tauri::WebviewWindowBuilder::new(
+        &app_handle,
+        params.label,
+        tauri::WebviewUrl::App(params.url.into()),
+    )
+    .decorations(params.decorations)
+    .transparent(params.transparent)
+    .shadow(params.shadow)
+    .always_on_top(params.always_on_top)
+    .inner_size(params.width, params.height)
+    .position(params.x, params.y)
+    .build()
+    .unwrap();
 
-    std::thread::spawn(move || {
-        let webview_window = tauri::WebviewWindowBuilder::new(
-            &app_handle,
-            params.label,
-            tauri::WebviewUrl::App(params.url.into()),
-        )
-        .decorations(params.decorations)
-        .transparent(params.transparent)
-        .shadow(params.shadow)
-        .always_on_top(params.always_on_top)
-        .inner_size(params.width, params.height)
-        .position(params.x, params.y)
-        .build()
-        .unwrap();
+    let _ = webview_window.set_focus();
 
-        let _ = webview_window.set_focus();
-
-        println!("窗口已创建");
-    });
+    println!("窗口已创建");
 }
 
 // 隐藏窗口
@@ -88,4 +85,16 @@ pub fn close_webview_window(app: AppHandle, label: &str) -> Result<(), String> {
     }
 
     Ok(())
+}
+
+// 聚焦已存在的窗口
+#[allow(dead_code)]
+#[tauri::command()]
+pub fn focus_if_webview_window_exists(app: AppHandle, label: &str) -> bool {
+    if let Some(webview_window) = app.get_webview_window(label) {
+        let _ = webview_window.set_focus();
+        true
+    } else {
+        false
+    }
 }

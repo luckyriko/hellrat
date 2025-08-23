@@ -54,13 +54,20 @@
           </el-col>
         </el-form-item>
 
+        <el-form-item label="Mod安装顺序" prop="app_config_path">
+          <el-col :span="22">
+            <el-radio-group v-model="gameMod.mods_install_priority">
+              <el-radio value="asc" size="large">正序-第一个优先级最高</el-radio>
+              <el-radio value="desc" size="large">倒序-最后一个优先级最高</el-radio>
+            </el-radio-group>
+          </el-col>
+        </el-form-item>
+
         <el-form-item>
           <el-button type="primary" @click="onSubmit(gameModFormRef, 'game_mod')">保存</el-button>
           <!-- <el-button @click="resetSubmit(gameModFormRef)">重置</el-button> -->
-
         </el-form-item>
       </el-form>
-
 
       <el-row>
         <el-col :span="24">
@@ -89,7 +96,7 @@
         </el-form-item>
         <el-form-item label="文字输入间隔" prop="typing_interval">
           <el-col :span="18">
-            <el-input v-model.trim="keyboard.typing_interval" />
+            <el-input v-model.trim="keyboard.typing_interval" clearable inputmode="numeric" />
           </el-col>
         </el-form-item>
         <el-form-item label="窗口宽高w-h" required>
@@ -158,7 +165,7 @@
         </el-form-item>
         <el-form-item label="文字输入间隔" prop="typing_interval">
           <el-col :span="18">
-            <el-input v-model.trim="quicklyChat.typing_interval" />
+            <el-input v-model.trim="quicklyChat.typing_interval" clearable inputmode="numeric" />
           </el-col>
         </el-form-item>
         <el-form-item label="窗口宽高w-h" required>
@@ -211,7 +218,8 @@ const gameMod = reactive({
   app_config_path: '',
   game_data_path: '',
   mods_store_path: '',
-  mods_temp_cache_path: ''
+  mods_temp_cache_path: '',
+  mods_install_priority: 'asc'
 })
 
 const keyboard = reactive({
@@ -227,7 +235,7 @@ const keyboard = reactive({
 const quicklyChat = reactive({
   typing_interval: '10',
   flag: true,
-  shortcut: "ctrl + p",
+  shortcut: "ctrl + .",
   width: "800.0",
   height: "600.0",
   chat: {
@@ -346,28 +354,27 @@ onMounted(async () => {
     const store = await Store.load('config.json', { autoSave: false })
 
     const storeGameMod = await store.get('game_mod');
-    console.log(storeGameMod);
+    // console.log(storeGameMod);
     if (storeGameMod) {
       for (const [key, value] of Object.entries(gameMod)) {
-        gameMod[key] = storeGameMod[key] || value;
+        gameMod[key] = storeGameMod[key];
       }
     }
 
     const storeKeyboard = await store.get('keyboard');
-    console.log(storeKeyboard);
+    // console.log(storeKeyboard);
     if (storeKeyboard) {
       for (const [key, value] of Object.entries(keyboard)) {
-        keyboard[key] = storeKeyboard[key] || value;
+        keyboard[key] = storeKeyboard[key];
       }
     }
 
 
     const storeQuicklyChat = await store.get('quickly_chat');
-    console.log(storeQuicklyChat);
-
+    // console.log(storeQuicklyChat);
     if (storeQuicklyChat) {
       for (const [key, value] of Object.entries(quicklyChat)) {
-        quicklyChat[key] = storeQuicklyChat[key] || value;
+        quicklyChat[key] = storeQuicklyChat[key];
       }
     }
 

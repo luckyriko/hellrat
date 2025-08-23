@@ -15,7 +15,7 @@ use enigo::{
 static ENIGO: Lazy<Mutex<Enigo>> =
     Lazy::new(|| Mutex::new(Enigo::new(&Settings::default()).unwrap()));
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn confirm_input(app: AppHandle, text: String, label: String) -> Result<(), String> {
     let app_handle_clone = app.clone();
     // 隐藏窗口
@@ -23,7 +23,7 @@ pub fn confirm_input(app: AppHandle, text: String, label: String) -> Result<(), 
     sleep(Duration::from_millis(250));
 
     let config_label = label.replace("-", "_");
-    let config_json = my_config::get_app_config_json(&app, config_label).unwrap_or(json!({
+    let config_json = my_config::get_app_config_json(&app, &config_label).unwrap_or(json!({
         "typing_interval": "10"
     }));
     let typing_interval = extract_u64(&config_json, "typing_interval", 10);
@@ -43,7 +43,7 @@ pub fn confirm_input(app: AppHandle, text: String, label: String) -> Result<(), 
         .map_err(|e| format!("模拟回车抬起失败: {}", e))?;
     sleep(Duration::from_millis(50));
 
-    if typing_interval == 0 {        
+    if typing_interval == 0 {
         // 直接输入文字
         enigo
             .text(&text)
@@ -104,8 +104,8 @@ pub fn register_global_shortcut(app: &mut tauri::App) -> tauri::Result<()> {
             Code, GlobalShortcutExt, Modifiers, Shortcut, ShortcutState,
         };
 
-        let ctrl_space_shortcut = Shortcut::new(Some(Modifiers::CONTROL), Code::Space);
-        let ctrl_p_shortcut = Shortcut::new(Some(Modifiers::CONTROL), Code::KeyP);
+        let keyboard_shortcut = Shortcut::new(Some(Modifiers::CONTROL), Code::Space);
+        let quickly_chat_shortcut = Shortcut::new(Some(Modifiers::CONTROL), Code::Period);
 
         app.handle().plugin(
             tauri_plugin_global_shortcut::Builder::new()
@@ -116,7 +116,7 @@ pub fn register_global_shortcut(app: &mut tauri::App) -> tauri::Result<()> {
                     if event.state == ShortcutState::Released {
                         println!("Released!");
 
-                        if shortcut == &ctrl_space_shortcut {
+                        if shortcut == &keyboard_shortcut {
                             println!("ctrl_space Released!");
                             if let Some(webview_window) = app_handle.get_webview_window("keyboard")
                             {
@@ -174,7 +174,7 @@ pub fn register_global_shortcut(app: &mut tauri::App) -> tauri::Result<()> {
                             }
                         }
 
-                        if shortcut == &ctrl_p_shortcut {
+                        if shortcut == &quickly_chat_shortcut {
                             println!("ctrl_slash Released!");
                             if let Some(webview_window) =
                                 app_handle.get_webview_window("quickly-chat")
@@ -246,26 +246,32 @@ pub fn register_global_shortcut(app: &mut tauri::App) -> tauri::Result<()> {
 
         let keyboard_json =
             my_config::get_app_config_json(app.handle(), "keyboard".into()).unwrap_or(json!({}));
-        let keyboard_flag = keyboard_json.get("flag").and_then(|v| v.as_bool()).unwrap_or(false);
+        let keyboard_flag = keyboard_json
+            .get("flag")
+            .and_then(|v| v.as_bool())
+            .unwrap_or(false);
 
-        if !app.global_shortcut().is_registered(ctrl_space_shortcut) && keyboard_flag {
+        if !app.global_shortcut().is_registered(keyboard_shortcut) && keyboard_flag {
             app.global_shortcut()
-                .register(ctrl_space_shortcut)
+                .register(keyboard_shortcut)
                 .map_err(|e| anyhow!("注册快捷键1失败: {}", e))?;
         } else {
-            println!("{}该快捷键1已经注册过了/已关闭注册", ctrl_space_shortcut);
+            println!("{}该快捷键1已经注册过了/已关闭注册", keyboard_shortcut);
         }
 
-        let quickly_chat_json =
-            my_config::get_app_config_json(app.handle(), "quickly_chat".into()).unwrap_or(json!({}));
-        let quickly_chat_flag = quickly_chat_json.get("flag").and_then(|v| v.as_bool()).unwrap_or(false);
+        let quickly_chat_json = my_config::get_app_config_json(app.handle(), "quickly_chat".into())
+            .unwrap_or(json!({}));
+        let quickly_chat_flag = quickly_chat_json
+            .get("flag")
+            .and_then(|v| v.as_bool())
+            .unwrap_or(false);
 
-        if !app.global_shortcut().is_registered(ctrl_p_shortcut) && quickly_chat_flag {
+        if !app.global_shortcut().is_registered(quickly_chat_shortcut) && quickly_chat_flag {
             app.global_shortcut()
-                .register(ctrl_p_shortcut)
+                .register(quickly_chat_shortcut)
                 .map_err(|e| anyhow!("注册快捷键2失败: {}", e))?;
         } else {
-            println!("{}该快捷键2已经注册过了/已关闭注册", ctrl_p_shortcut);
+            println!("{}该快捷键2已经注册过了/已关闭注册", quickly_chat_shortcut);
         }
     }
 
