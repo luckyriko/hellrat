@@ -111,6 +111,7 @@
         <div>Mod总数：1000</div> -->
         <el-button plain color="#626aef" @click="activateAllMods" size="small">全启</el-button>
         <el-button plain color="#626aef" @click="disableAllMods" size="small">全禁</el-button>
+        <el-button plain color="#626aef" @click="deleteAllMods" size="small">全删</el-button>
       </div>
       <div class="text">
         <div @click="donateFlag = !donateFlag">
@@ -300,6 +301,86 @@ const disableAllMods = async () => {
     await getModsList();
 
   }
+}
+
+const deleteAllMods = async () => {
+  if (!gameMod.mods_store_path) {
+    ElMessage.error('未获取到Mod存档目录');
+    return
+  }
+
+  if (!environment.value.id) {
+    ElMessage.error('未获取到环境变量Id');
+    return
+  }
+
+  const delete_file_flag = ref(false);
+  ElMessageBox({
+    title: '确认删除该环境下的所有Mod记录吗？',
+    message: () =>
+      h('div', null, [
+        h('span', null, '我还需要删除文件，删除前请自行备份。'),
+        h(ElSwitch, {
+          modelValue: delete_file_flag.value,
+          'onUpdate:modelValue': (val) => {
+            delete_file_flag.value = val
+          },
+        }),
+      ]),
+    showCancelButton: true,
+    confirmButtonText: '确定',
+    cancelButtonText: '取消',
+  }).then(async (action) => {
+    if (action == 'confirm') {
+      const loading = ElLoading.service({
+        lock: true,
+        text: '正在删除游戏补丁ing...',
+        background: 'rgba(0, 0, 0, 0.7)',
+      })
+
+      try {
+        const results = await Promise.allSettled(modsData.value.map(async mod => {
+          await invoke("delete_one_mod", {
+            record_id: mod.id,
+            env_id: Number(environment.value.id),
+            delete_file_flag: delete_file_flag.value ? 1 : 0,
+            mod_dir_name: mod.path
+          });
+        }));
+
+        const failed = results
+          .filter(r => r.status === "rejected")
+          .map(r => r.reason);
+
+        console.log("失败的结果:", failed);
+
+        if (failed.length == 0) {
+          ElMessage({
+            message: '删除成功',
+            type: 'success'
+          })
+        } else {
+          const uniqueFailed = [...new Set(failed)];
+          ElMessage.error('删除失败：共' + failed.length + '个错误：' + uniqueFailed.join(''))
+
+        }
+
+      } catch (error) {
+        console.error("Error delete mod:", error);
+        ElMessage.error('删除失败：' + String(error))
+
+      } finally {
+        loading.close();
+        await getModsList();
+
+      }
+    }
+  }).catch(() => {
+    ElMessage({
+      type: 'info',
+      message: '已取消',
+    })
+  })
 }
 
 

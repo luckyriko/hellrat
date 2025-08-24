@@ -811,7 +811,7 @@ pub fn delete_one_mod(
     let mod_install_status = my_db::check_mod_install_status(record_id)
         .map_err(|e| format!("查询Mod安装状态失败: {}", e))?;
     if mod_install_status {
-        return Err(format!("该Mod正在使用，无法删除！"));
+        return Err(format!("该Mod正在游戏内使用，请先清除！"));
     }
     my_db::delete_one_mod(record_id, env_id, delete_file_flag)
         .map_err(|e| format!("删除Mod记录失败: {}", e))?;
