@@ -1,6 +1,7 @@
 use crate::config as my_config;
 use crate::db as my_db;
 use crate::fs as my_fs;
+use json5;
 use mudder::SymbolTable;
 use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
@@ -250,6 +251,11 @@ pub fn save_mods(app: AppHandle, paths: Vec<String>, env_id: u32) -> Result<(), 
         if let Some(mmj) = mod_manifest_json {
             println!("自带manifest_json");
 
+            let mut r#type: u8 = 2;
+            if mmj.Options.is_none() {
+                r#type = 1;
+            }
+
             let mod_info: GameMod = GameMod {
                 uuid: mmj.Guid,
                 name: mmj.Name,
@@ -257,7 +263,7 @@ pub fn save_mods(app: AppHandle, paths: Vec<String>, env_id: u32) -> Result<(), 
                 version: mmj.Version.to_string(),
                 desc: mmj.Description,
                 icon: mmj.IconPath.unwrap_or_default(),
-                r#type: 2,
+                r#type,
                 activate: 0,
                 options: mmj.Options.map_or("".to_string(), |v| {
                     serde_json::to_string(&v).unwrap_or_default()
@@ -420,7 +426,7 @@ pub fn install_mods(app: AppHandle, env_id: u32) -> Result<(), String> {
             // item.env_mod_options字段不为空才解析
             if let Some(env_mod_options) = &item.env_mod_options {
                 if !env_mod_options.is_empty() {
-                    options = serde_json::from_str(env_mod_options)
+                    options = json5::from_str(env_mod_options)
                         .map_err(|e| format!("安装失败2-Json解析失败: {}", e))?;
                 }
             }
@@ -715,7 +721,7 @@ fn get_mod_manifest_json(path: &Path) -> anyhow::Result<Option<Manifest>> {
         // 读取文件内容
         let content = fs::read_to_string(&manifest_json_path)?;
         // 解析为结构体
-        let config = serde_json::from_str(&content)?;
+        let config = json5::from_str(&content)?;
         Ok(Some(config))
     } else {
         println!(" {:?}目录中不存在manifest.json", manifest_json_path);

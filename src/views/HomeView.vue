@@ -79,7 +79,10 @@
             </template>
           </el-image>
           <div style="display: flex;flex:1; flex-direction: row;justify-content: space-between;">
-            <div class="text" @click="openModInfoDialog(item.id)">{{ item.name }}</div>
+            <div class="text" @click="openSelectOptionsDialog(item.id, item.type)">
+              <span>{{ item.name }}</span>
+              <el-icon size="20" color="violet" v-if="item.type == 2"><i-ep-edit /></el-icon>
+            </div>
             <div>
               <el-button size="small" plain @click="openDir(item)">
                 打开
