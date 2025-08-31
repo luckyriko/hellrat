@@ -44,62 +44,69 @@
 
     <!-- 表格 -->
     <el-scrollbar class="main-scroll">
-      <div v-show="listShowType == 'grid'" class="content-area grid" id="sortableGrid">
-        <div v-for="item in modsData" :key="item.id" class="item" :class="{ 'install': item.env_mod_install_flag }"
-          @contextmenu.prevent="openMenu($event, item)">
-          <el-image :src="item.previewPath" fit="cover" style="width: 100%; height: 200px"
-            @click="openModInfoDialog(item.id)">
-            <template #error>
-              <div class="image-slot">
-                <el-icon><i-ep-picture /></el-icon>
-              </div>
-            </template>
-          </el-image>
-          <div class="text" @click="openSelectOptionsDialog(item.id, item.type)">
-            <span>{{ item.name }}</span>
-            <el-icon size="20" color="violet" v-if="item.type == 2"><i-ep-edit /></el-icon>
-          </div>
-          <div class="switch">
-            <el-switch v-model="item.activate" style="--el-switch-on-color: #13ce66; --el-switch-off-color: #ff4949"
-              :active-value="1" :inactive-value="0" @change="changeModActivate(item)" />
-          </div>
-        </div>
-      </div>
-      <div v-show="listShowType != 'grid'" class="content-area list" id="sortableList">
-        <div v-for="item in modsData" :key="item.id" class="item">
-          <el-switch v-model="item.activate" style="--el-switch-on-color: #13ce66; --el-switch-off-color: #ff4949"
-            :active-value="1" :inactive-value="0" @change="changeModActivate(item)" />
-          <el-image :src="item.previewPath" fit="cover" @click="openModInfoDialog(item.id)"
-            style="width: 40px; height: 40px; border-radius: 50%;margin-right: 10px;margin-left: 10px;"
-            :class="{ 'install': item.env_mod_install_flag }">
-            <template #error>
-              <div class="image-slot">
-                {{ item.name[0].toUpperCase() }}
-              </div>
-            </template>
-          </el-image>
-          <div style="display: flex;flex:1; flex-direction: row;justify-content: space-between;">
+      <el-checkbox-group v-model="checkedMods" @change="handleCheckedModsChange" size="large">
+        <div v-show="listShowType == 'grid'" class="content-area grid" id="sortableGrid">
+          <div v-for="item in modsData" :key="item.id" class="item" :class="{ 'install': item.env_mod_install_flag }"
+            @contextmenu.prevent="openMenu($event, item)">
+            <el-image :src="item.previewPath" fit="cover" style="width: 100%; height: 200px"
+              @click="openModInfoDialog(item.id)">
+              <template #error>
+                <div class="image-slot">
+                  <el-icon><i-ep-picture /></el-icon>
+                </div>
+              </template>
+            </el-image>
             <div class="text" @click="openSelectOptionsDialog(item.id, item.type)">
               <span>{{ item.name }}</span>
               <el-icon size="20" color="violet" v-if="item.type == 2"><i-ep-edit /></el-icon>
             </div>
-            <div>
-              <el-button size="small" plain @click="openDir(item)">
-                打开
-              </el-button>
-              <el-button size="small" plain @click="openModInfoDialog(item.id)">
-                详情
-              </el-button>
-              <el-button size="small" plain @click="handleEdit(item)">
-                编辑
-              </el-button>
-              <el-button type="danger" size="small" plain @click="deleteMod(item)">
-                删除
-              </el-button>
+            <div class="switch">
+              <el-switch v-model="item.activate" style="--el-switch-on-color: #13ce66; --el-switch-off-color: #ff4949"
+                :active-value="1" :inactive-value="0" @change="changeModActivate(item)" />
+            </div>
+            <div class="checkbox" v-show="checkboxEditFlag">
+              <el-checkbox :value="item.env_mod_id" />
             </div>
           </div>
         </div>
-      </div>
+        <div v-show="listShowType != 'grid'" class="content-area list" id="sortableList">
+          <div v-for="item in modsData" :key="item.id" class="item">
+            <el-checkbox :value="item.env_mod_id" style="margin-right: 12px;" v-show="checkboxEditFlag" />
+
+            <el-switch v-model="item.activate" style="--el-switch-on-color: #13ce66; --el-switch-off-color: #ff4949"
+              :active-value="1" :inactive-value="0" @change="changeModActivate(item)" />
+            <el-image :src="item.previewPath" fit="cover" @click="openModInfoDialog(item.id)"
+              style="width: 40px; height: 40px; border-radius: 50%;margin-right: 10px;margin-left: 10px;"
+              :class="{ 'install': item.env_mod_install_flag }">
+              <template #error>
+                <div class="image-slot">
+                  {{ item.name[0].toUpperCase() }}
+                </div>
+              </template>
+            </el-image>
+            <div style="display: flex;flex:1; flex-direction: row;justify-content: space-between;">
+              <div class="text" @click="openSelectOptionsDialog(item.id, item.type)">
+                <span>{{ item.name }}</span>
+                <el-icon size="20" color="violet" v-if="item.type == 2"><i-ep-edit /></el-icon>
+              </div>
+              <div>
+                <el-button size="small" plain @click="openDir(item)">
+                  打开
+                </el-button>
+                <el-button size="small" plain @click="openModInfoDialog(item.id)">
+                  详情
+                </el-button>
+                <el-button size="small" plain @click="handleEdit(item)">
+                  编辑
+                </el-button>
+                <el-button type="danger" size="small" plain @click="deleteMod(item)">
+                  删除
+                </el-button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </el-checkbox-group>
     </el-scrollbar>
 
     <!-- 表格. -->
@@ -109,15 +116,24 @@
     <!-- 右键功能. -->
 
     <div class="footer">
-      <div class="text">
-        <!-- <div>环境Mod总数：1000</div>
-        <div>Mod总数：1000</div> -->
-        <el-button plain color="#626aef" @click="activateAllMods" size="small">全启</el-button>
-        <el-button plain color="#626aef" @click="disableAllMods" size="small">全禁</el-button>
-        <el-button plain color="#626aef" @click="deleteAllMods" size="small">全删</el-button>
+      <div class="text" style="height: 100%;">
+        <div @click="checkboxEditFlag = !checkboxEditFlag" style="margin-right: 18px;" class="text">
+          <el-icon>
+            <InfoFilled :color="!checkboxEditFlag ? 'orange' : 'red'" />
+          </el-icon>
+        </div>
+        <div v-show="checkboxEditFlag" class="text">
+          <el-checkbox v-model="checkAll" :indeterminate="isIndeterminate" @change="handleCheckAllChange"
+            style="margin-right: 12px;">
+            全选
+          </el-checkbox>
+          <el-button plain type="success" @click="activateAllMods" size="small">启用</el-button>
+          <el-button plain type="warning" @click="disableAllMods" size="small">禁用</el-button>
+          <el-button plain type="danger" @click="deleteAllMods" size="small">删除</el-button>
+        </div>
       </div>
-      <div class="text">
-        <div @click="donateFlag = !donateFlag">
+      <div class="text" style="height: 100%;">
+        <div @click="donate" class="text">
           <span v-show="donateFlag" style="color: #666;font-size: 0.8rem;">如果你认可开发者的辛勤劳作 请他喝杯饮料吧</span>
         </div>
         <el-icon color="deepskyblue" size="20" @click="donate">
@@ -200,7 +216,6 @@ import { h, ref, reactive, onMounted, toRaw, computed, nextTick } from 'vue';
 import { open as openShell } from '@tauri-apps/plugin-shell';
 import { open as openDialog } from '@tauri-apps/plugin-dialog';
 import { invoke, convertFileSrc } from '@tauri-apps/api/core';
-import { exists, mkdir, create, readTextFile, writeTextFile, BaseDirectory } from '@tauri-apps/plugin-fs';
 import { join } from '@tauri-apps/api/path';
 import SelectOptions from './components/SelectOptions.vue';
 import AddEnvironments from './components/AddEnvironments.vue';
@@ -208,9 +223,34 @@ import SelectMods from './components/SelectMods.vue';
 import ShowModInfo from './components/ShowModInfo.vue';
 import Menu from './components/Menu.vue';
 import Sortable from 'sortablejs';
-import { DocumentAdd, Delete, EditPen, Operation, Sort, MagicStick, ColdDrink } from '@element-plus/icons-vue'
+import { DocumentAdd, Delete, EditPen, Operation, Sort, MagicStick, ColdDrink, InfoFilled } from '@element-plus/icons-vue'
 import { open } from '@tauri-apps/plugin-shell';
 import { listen } from '@tauri-apps/api/event';
+
+const checkboxEditFlag = ref(false);
+const checkAll = ref(false);
+const isIndeterminate = ref(false);
+const checkedMods = ref([]);
+
+const handleCheckAllChange = (flag) => {
+  // console.log("handleCheckAllChange: ", flag);
+  checkedMods.value = [];
+  isIndeterminate.value = false;
+
+  if (flag) {
+    modsData.value.forEach(element => {
+      checkedMods.value.push(element.env_mod_id);
+    });
+  }
+
+}
+const handleCheckedModsChange = (value) => {
+  // console.log("handleCheckedModsChange: ", value);
+  const checkedCount = value.length
+  checkAll.value = checkedCount === modsData.value.length
+  isIndeterminate.value = checkedCount > 0 && checkedCount < modsData.value.length
+}
+
 
 const donateFlag = ref(true);
 const donate = async () => {
@@ -266,14 +306,19 @@ const changeModActivate = async (mod) => {
 }
 
 const activateAllMods = async () => {
+  if (checkedMods.value.length == 0) {
+    ElMessage.error('请至少选择一个！');
+    return
+  }
+
   const loading = ElLoading.service({
     lock: true,
     text: '正在启用游戏补丁ing...',
     background: 'rgba(0, 0, 0, 0.7)',
   })
   try {
-    await Promise.allSettled(modsData.value.map(async mod => {
-      await invoke("update_environment_mod_activate", { id: mod.env_mod_id, activate: 1 });
+    await Promise.allSettled(checkedMods.value.map(async env_mod_id => {
+      await invoke("update_environment_mod_activate", { id: env_mod_id, activate: 1 });
     }));
 
   } catch (error) {
@@ -287,14 +332,19 @@ const activateAllMods = async () => {
 }
 
 const disableAllMods = async () => {
+  if (checkedMods.value.length == 0) {
+    ElMessage.error('请至少选择一个！');
+    return
+  }
+
   const loading = ElLoading.service({
     lock: true,
     text: '正在禁用游戏补丁ing...',
     background: 'rgba(0, 0, 0, 0.7)',
   })
   try {
-    await Promise.allSettled(modsData.value.map(async mod => {
-      await invoke("update_environment_mod_activate", { id: mod.env_mod_id, activate: 0 });
+    await Promise.allSettled(checkedMods.value.map(async env_mod_id => {
+      await invoke("update_environment_mod_activate", { id: env_mod_id, activate: 0 });
     }));
   } catch (error) {
     ElMessage.error("全禁失败：" + String(error))
@@ -314,6 +364,11 @@ const deleteAllMods = async () => {
 
   if (!environment.value.id) {
     ElMessage.error('未获取到环境变量Id');
+    return
+  }
+
+  if (checkedMods.value.length == 0) {
+    ElMessage.error('请至少选择一个！');
     return
   }
 
@@ -342,13 +397,16 @@ const deleteAllMods = async () => {
       })
 
       try {
-        const results = await Promise.allSettled(modsData.value.map(async mod => {
-          await invoke("delete_one_mod", {
-            record_id: mod.id,
-            env_id: Number(environment.value.id),
-            delete_file_flag: delete_file_flag.value ? 1 : 0,
-            mod_dir_name: mod.path
-          });
+        const results = await Promise.allSettled(checkedMods.value.map(async env_mod_id => {
+          let mod = modsData.value.find(x => x.env_mod_id == env_mod_id);
+          if (mod) {
+            await invoke("delete_one_mod", {
+              record_id: mod.id,
+              env_id: Number(environment.value.id),
+              delete_file_flag: delete_file_flag.value ? 1 : 0,
+              mod_dir_name: mod.path
+            });
+          }
         }));
 
         const failed = results
@@ -1073,6 +1131,9 @@ async function getModsList(name = '') {
     ElMessage.error('获取失败')
 
   } finally {
+    checkedMods.value = [];
+    isIndeterminate.value = false;
+    checkAll.value = false;
     loading.close();
     // getStatistics();
 
@@ -1148,8 +1209,6 @@ const previewImg = async (row) => {
   flex-direction: column;
   height: 100vh;
   box-sizing: border-box;
-  // padding: 20px 20px 0 20px;
-  // position: relative;
 }
 
 // 固定头部和底部高度
@@ -1162,6 +1221,7 @@ const previewImg = async (row) => {
   align-items: center;
   padding-left: 20px;
   padding-right: 20px;
+  box-sizing: border-box;
 }
 
 .header {
@@ -1171,9 +1231,13 @@ const previewImg = async (row) => {
 }
 
 .footer {
-  height: 30px;
+  height: 40px;
   border-top: 1px solid #ddd;
   justify-content: space-between;
+}
+
+.main-scroll {
+  box-sizing: border-box;
 }
 
 .text {
@@ -1182,18 +1246,11 @@ const previewImg = async (row) => {
   align-items: center;
 }
 
-// .content {
-//   flex: 1;
-//   overflow: auto;
-//   background: #fff;
-//   padding: 16px;
-// }
-
-// .title {
-//   font-size: 20px;
-//   font-weight: bold;
-//   margin-bottom: 10px;
-// }
+:deep(.el-checkbox-group) {
+  box-sizing: border-box;
+  font-size: 1rem;
+  line-height: normal;
+}
 
 .image {
   min-width: 150px;
@@ -1215,52 +1272,6 @@ const previewImg = async (row) => {
   background-color: skyblue !important;
 }
 
-// .card-grid {
-//   display: grid;
-//   grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-//   gap: 20px;
-//   padding: 20px;
-//   // height: 100%;
-//   // background-color: red;
-
-//   .card {
-//     background-color: #fff;
-//     border: 1px solid #eee;
-//     border-radius: 10px;
-//     overflow: hidden;
-//     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
-//     transition: transform 0.2s ease;
-//     display: flex;
-//     flex-direction: column;
-
-//     // &:hover {
-//     //   transform: translateY(-4px);
-//     // }
-
-//     img {
-//       width: 100%;
-//       height: 160px;
-//       object-fit: cover;
-//     }
-
-//     .card-text {
-//       padding: 12px;
-//       font-size: 16px;
-//       text-align: center;
-
-//       h3 {
-//         margin: 0;
-//         font-size: 18px;
-//       }
-
-//       p {
-//         font-size: 14px;
-//         color: #666;
-//         margin-top: 6px;
-//       }
-//     }
-//   }
-// }
 
 .content-area {
   padding: 16px;
@@ -1298,6 +1309,16 @@ const previewImg = async (row) => {
       position: absolute;
       top: 0;
       right: 5px;
+    }
+
+    .checkbox {
+      position: absolute;
+      top: 0;
+      left: 8px;
+      // 防止误点
+      padding-right: 18px;
+      padding-bottom: 18px;
+      // background-color: red;
     }
 
     .install {

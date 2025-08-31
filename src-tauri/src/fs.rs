@@ -1,9 +1,10 @@
 use anyhow::{Context, Result};
 use std::fs;
-use std::io;
-use std::path::{Path, PathBuf};
-use std::process::Command;
+use std::path::Path;
+use std::process::{Command, Output};
 use unrar::Archive;
+use winreg::RegKey;
+use winreg::enums::*;
 use zip::ZipArchive;
 
 // 使用系统文件管理器打开文件夹
@@ -168,51 +169,7 @@ pub fn copy_preview_img(preview_file: &str, target_path: &Path) -> Result<String
 pub fn unzip_one_file(zip_path: &str, dest_path: &str) -> Result<()> {
     let file = fs::File::open(zip_path)?;
     let mut archive = ZipArchive::new(file)?;
-
-    for i in 0..archive.len() {
-        let mut file = archive.by_index(i)?;
-        let outpath = match file.enclosed_name() {
-            Some(path) => PathBuf::from(dest_path).join(path),
-            None => continue,
-        };
-
-        // 如果 ZIP 文件中的某个文件附加了注释，就打印出来。
-        // {
-        //     let comment = file.comment();
-        //     if !comment.is_empty() {
-        //         println!("File {i} comment: {comment}");
-        //     }
-        // }
-
-        if file.is_dir() {
-            // println!("File {} extracted to \"{}\"", i, outpath.display());
-            fs::create_dir_all(&outpath)?;
-        } else {
-            // println!(
-            //     "File {} extracted to \"{}\" ({} bytes)",
-            //     i,
-            //     outpath.display(),
-            //     file.size()
-            // );
-            if let Some(p) = outpath.parent() {
-                if !p.exists() {
-                    fs::create_dir_all(p)?;
-                }
-            }
-            let mut outfile = fs::File::create(&outpath)?;
-            io::copy(&mut file, &mut outfile)?;
-        }
-
-        // Get and Set permissions
-        // #[cfg(unix)]
-        // {
-        //     use std::os::unix::fs::PermissionsExt;
-
-        //     if let Some(mode) = file.unix_mode() {
-        //         fs::set_permissions(&outpath, fs::Permissions::from_mode(mode)).unwrap();
-        //     }
-        // }
-    }
+    archive.extract(dest_path)?;
 
     Ok(())
 }
@@ -221,11 +178,6 @@ pub fn unzip_one_file(zip_path: &str, dest_path: &str) -> Result<()> {
 pub fn unrar_one_file(zip_path: &str, dest_path: &str) -> Result<()> {
     let mut archive = Archive::new(zip_path).open_for_processing()?;
     while let Some(header) = archive.read_header()? {
-        // println!(
-        //     "{} bytes: {}",
-        //     header.entry().unpacked_size,
-        //     header.entry().filename.to_string_lossy(),
-        // );
         archive = if header.entry().is_file() {
             header.extract_with_base(dest_path)?
         } else {
@@ -239,4 +191,37 @@ pub fn unrar_one_file(zip_path: &str, dest_path: &str) -> Result<()> {
 pub fn un7z_one_file(zip_path: &str, dest_path: &str) -> Result<()> {
     sevenz_rust2::decompress_file(zip_path, dest_path)?;
     Ok(())
+}
+
+pub fn run_7zip_exe_extract(
+    archive: &str,
+    target_dir: &str,
+    install_dir: &str,
+) -> std::io::Result<Output> {
+    let output = Command::new("7z.exe")
+        .arg("x")
+        .arg("-aoa")
+        .arg(archive)
+        .arg(format!("-o{}", target_dir))
+        .env("PATH", install_dir)
+        .output()?;
+
+    Ok(output)
+}
+
+#[tauri::command]
+pub fn get_seven_zip_path() -> Result<String, String> {
+    let hklm = RegKey::predef(HKEY_LOCAL_MACHINE);
+    let key = hklm
+        .open_subkey("SOFTWARE\\7-Zip")
+        .map_err(|e| format!("get_seven_zip_path open_subkey 失败: {}", e))?;
+    let mut path: String = key
+        .get_value("Path")
+        .map_err(|e| format!("get_seven_zip_path get_value失败: {}", e))?;
+    println!("7-Zip 安装目录: {}", path);
+
+    if !path.is_empty() {
+        path = path.trim_end_matches('\\').to_string();
+    }
+    Ok(path)
 }

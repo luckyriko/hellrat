@@ -20,28 +20,42 @@ pub fn confirm_input(app: AppHandle, text: String, label: String) -> Result<(), 
     let app_handle_clone = app.clone();
     // 隐藏窗口
     my_window::hide_webview_window(app_handle_clone, &label)?;
-    sleep(Duration::from_millis(250));
 
+    // 获取配置
     let config_label = label.replace("-", "_");
     let config_json = my_config::get_app_config_json(&app, &config_label).unwrap_or(json!({
-        "typing_interval": "10"
+        "typing_interval": "10",
+        "enter_interval": "50"
     }));
     let typing_interval = extract_u64(&config_json, "typing_interval", 10);
+    let enter_interval = extract_u64(&config_json, "enter_interval", 50);
+    println!(
+        "enter_interval, typing_interval：{}, {}",
+        enter_interval, typing_interval
+    );
 
+    // 初始化模拟键盘输入插件
     // let mut enigo: Enigo = Enigo::new(&Settings::default()).map_err(|e| format!("Enigo初始化失败: {}", e))?;
     let mut enigo: std::sync::MutexGuard<'_, Enigo> = ENIGO
         .lock()
         .map_err(|e| format!("Enigo实例获取失败: {}", e))?;
 
     // 模拟回车唤起输入框：按下延时50ms左右释放，才能触发游戏里的唤起操作，很奇怪
-    enigo
-        .key(Key::Return, Press)
-        .map_err(|e| format!("模拟回车按下失败: {}", e))?;
-    sleep(Duration::from_millis(50));
-    enigo
-        .key(Key::Return, Release)
-        .map_err(|e| format!("模拟回车抬起失败: {}", e))?;
-    sleep(Duration::from_millis(50));
+    if enter_interval == 0 {
+        enigo
+            .key(Key::Return, Click)
+            .map_err(|e| format!("模拟回车点击失败: {}", e))?;
+    } else {
+        enigo
+            .key(Key::Return, Press)
+            .map_err(|e| format!("模拟回车按下失败: {}", e))?;
+        sleep(Duration::from_millis(enter_interval));
+        enigo
+            .key(Key::Return, Release)
+            .map_err(|e| format!("模拟回车抬起失败: {}", e))?;
+    }
+
+    sleep(Duration::from_millis(enter_interval));
 
     if typing_interval == 0 {
         // 直接输入文字
@@ -59,10 +73,22 @@ pub fn confirm_input(app: AppHandle, text: String, label: String) -> Result<(), 
     }
 
     // 模拟回车发送文字
-    sleep(Duration::from_millis(50));
-    enigo
-        .key(Key::Return, Click)
-        .map_err(|e| format!("模拟回车点击失败: {}", e))?;
+    // enigo
+    //     .key(Key::Return, Click)
+    //     .map_err(|e| format!("模拟回车点击失败: {}", e))?;
+    if enter_interval == 0 {
+        enigo
+            .key(Key::Return, Click)
+            .map_err(|e| format!("模拟回车点击失败: {}", e))?;
+    } else {
+        enigo
+            .key(Key::Return, Press)
+            .map_err(|e| format!("模拟回车按下失败: {}", e))?;
+        sleep(Duration::from_millis(enter_interval));
+        enigo
+            .key(Key::Return, Release)
+            .map_err(|e| format!("模拟回车抬起失败: {}", e))?;
+    }
 
     Ok(())
 }
@@ -80,7 +106,6 @@ pub fn press_enter() -> Result<(), String> {
     enigo
         .key(Key::Return, Release)
         .map_err(|e| format!("模拟回车抬起失败: {}", e))?;
-    sleep(Duration::from_millis(50));
     Ok(())
 }
 
@@ -110,7 +135,7 @@ pub fn register_global_shortcut(app: &mut tauri::App) -> tauri::Result<()> {
         app.handle().plugin(
             tauri_plugin_global_shortcut::Builder::new()
                 .with_handler(move |app_handle, shortcut, event| {
-                    println!("{:?}", shortcut);
+                    // println!("{:?}", shortcut);
 
                     // 按下快捷键执行相应的行为，只有抬起时才会执行，因为按键按住不放手可能会一直触发按下事件
                     if event.state == ShortcutState::Released {

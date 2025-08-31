@@ -81,7 +81,9 @@ pub fn initialization_config_json(app: &AppHandle) -> Result<()> {
                 "game_data_path": "",
                 "mods_store_path": mod_store_path,
                 "mods_temp_cache_path": mods_temp_cache_path,
-                "mods_install_priority": "asc"
+                "mods_install_priority": "asc",
+                "mods_unzip_type": 0,
+                "seven_zip_path": "",
             }),
         );
     }
@@ -94,6 +96,7 @@ pub fn initialization_config_json(app: &AppHandle) -> Result<()> {
                 "flag": true,
                 "shortcut": "ctrl + space",
                 "typing_interval": "10",
+                "enter_interval": "50",
                 "width": "340.0",
                 "height": "40.0",
                 "x": "1335.0",
@@ -110,6 +113,7 @@ pub fn initialization_config_json(app: &AppHandle) -> Result<()> {
                 "flag": true,
                 "shortcut": "ctrl + .",
                 "typing_interval": "10",
+                "enter_interval": "50",
                 "width": "800.0",
                 "height": "600.0",
                 "chat":{

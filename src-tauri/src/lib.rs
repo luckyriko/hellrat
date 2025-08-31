@@ -13,15 +13,51 @@ use crate::keyboard as my_keyboard;
 use crate::mods as my_mods;
 use crate::window as my_window;
 
-#[tauri::command]
-fn greet(name: &str) -> String {
-    format!("Hello, {}! You've been greeted from Rust!", name)
-}
+use tauri::{Manager, Window, WindowEvent};
+use tauri_plugin_dialog::{DialogExt, MessageDialogButtons};
+use tauri_plugin_global_shortcut::GlobalShortcutExt;
 
-#[tauri::command]
-fn my_custom_command() -> i32 {
-    println!("I was invoked from JavaScript!");
-    return 1;
+fn on_window_event(window: &Window, event: &WindowEvent) {
+    // https://v2.tauri.app/develop/state-management/#access-state-with-the-manager-trait
+    let app_handle = window.app_handle();
+
+    let label = window.label();
+    if label == "main" {
+        match event {
+            tauri::WindowEvent::CloseRequested { api, .. } => {
+                //阻止默认关闭
+                api.prevent_close();
+                let answer = window
+                    .dialog()
+                    .message("是否关闭应用？")
+                    .title("提示")
+                    .buttons(MessageDialogButtons::OkCancelCustom(
+                        "确认".to_string(),
+                        "取消".to_string(),
+                    ))
+                    .blocking_show();
+                // println!("answer {}", answer);
+                if answer {
+                    let shortcut_unregister_all_res = app_handle.global_shortcut().unregister_all();
+                    if let Err(e) = shortcut_unregister_all_res {
+                        println!("注销所有快捷键失败: {:#?}", e);
+                    }
+
+                    for webview_window in app_handle.webview_windows().values() {
+                        println!("循环查看所有窗口: {}", webview_window.label());
+                        let res = webview_window.destroy();
+                        if let Err(e) = res {
+                            println!("关闭窗口失败: {:#?}", e);
+                        }
+                    }
+
+                    app_handle.exit(0);
+                    // app_handle.restart();
+                }
+            }
+            _ => {}
+        }
+    }
 }
 
 // fn get_monitor_info(window: Window) -> Result<String, String> {
@@ -42,6 +78,7 @@ fn my_custom_command() -> i32 {
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_process::init())
         .plugin(tauri_plugin_store::Builder::default().build())
         .plugin(tauri_plugin_http::init())
         .plugin(tauri_plugin_shell::init())
@@ -50,9 +87,8 @@ pub fn run() {
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_opener::init())
         .invoke_handler(tauri::generate_handler![
-            greet,
-            my_custom_command,
             my_fs::open_folder,
+            my_fs::get_seven_zip_path,
             my_db::db_operate_test,
             my_db::get_mods_records_with_env_add_flag,
             my_db::get_environment_mods_records,
@@ -86,8 +122,8 @@ pub fn run() {
             my_config::set_identifier(app_identifier);
 
             // 配置文件初始化
-            let app_handle_clone = app.handle();
-            my_config::initialization_config_json(app_handle_clone)?;
+            let app_handle = app.handle();
+            my_config::initialization_config_json(app_handle)?;
 
             // 数据库初始化
             my_db::init_database()?;
@@ -105,17 +141,7 @@ pub fn run() {
 
             Ok(())
         })
-        .on_window_event(|window, event| {
-            let label = window.label();
-            if label == "keyboard" {
-                match event {
-                    tauri::WindowEvent::Destroyed { .. } => {
-                        println!("{} 窗口已关闭", label);
-                    }
-                    _ => {}
-                }
-            }
-        })
+        .on_window_event(on_window_event)
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

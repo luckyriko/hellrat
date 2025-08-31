@@ -121,6 +121,19 @@ pub fn save_mods(app: AppHandle, paths: Vec<String>, env_id: u32) -> Result<(), 
         .get("mods_temp_cache_path")
         .and_then(|v| v.as_str())
         .unwrap_or("");
+    let mods_unzip_type = config_json
+        .get("mods_unzip_type")
+        .and_then(|v| v.as_u64())
+        .unwrap_or(0);
+    let seven_zip_path = config_json
+        .get("seven_zip_path")
+        .and_then(|v| v.as_str())
+        .unwrap_or("");
+
+    println!(
+        "mods_unzip_type, seven_zip_path {} {}",
+        mods_unzip_type, seven_zip_path
+    );
     if game_data_path.is_empty() || mods_store_path.is_empty() || mods_temp_cache_path.is_empty() {
         return Err(format!("获取本地配置目录失败"));
     }
@@ -197,18 +210,39 @@ pub fn save_mods(app: AppHandle, paths: Vec<String>, env_id: u32) -> Result<(), 
 
             // 去解压
             let dest_path = dest_path_buf.to_string_lossy().to_string();
-            if file_extension == "zip" {
-                my_fs::unzip_one_file(item, &dest_path)
-                    .map_err(|e| format!("解压文件失败: {}", e))?;
-            } else if file_extension == "7z" {
-                my_fs::un7z_one_file(item, &dest_path)
-                    .map_err(|e| format!("解压文件失败: {}", e))?;
-            } else if file_extension == "rar" {
-                my_fs::unrar_one_file(item, &dest_path)
-                    .map_err(|e| format!("解压文件失败: {}", e))?;
+            if mods_unzip_type == 0 {
+                if file_extension == "zip" {
+                    my_fs::unzip_one_file(item, &dest_path)
+                        .map_err(|e| format!("解压文件失败: {}", e))?;
+                } else if file_extension == "7z" {
+                    my_fs::un7z_one_file(item, &dest_path)
+                        .map_err(|e| format!("解压文件失败: {}", e))?;
+                } else if file_extension == "rar" {
+                    my_fs::unrar_one_file(item, &dest_path)
+                        .map_err(|e| format!("解压文件失败: {}", e))?;
+                }
+            } else {
+                match my_fs::run_7zip_exe_extract(item, &dest_path, seven_zip_path) {
+                    Ok(output) => {
+                        println!("{} 解压状态: {}", item, output.status);
+                        // println!("stdout:\n{}", String::from_utf8_lossy(&output.stdout));
+                        // eprintln!("stderr:\n{}", String::from_utf8_lossy(&output.stderr));
+                        if !output.status.success() {
+                            return Err(format!(
+                                "7zip解压失败: 退出码：{}，错误原因：{}",
+                                output.status,
+                                String::from_utf8_lossy(&output.stderr)
+                            ));
+                        }
+                    }
+                    Err(e) => {
+                        eprintln!("执行失败: {}", e);
+                        return Err(format!("7zip解压失败: {}", e));
+                    }
+                }
             }
 
-            println!("解压zip文件完成");
+            println!("解压文件完成");
         } else {
             println!("既不是目录也不是压缩文件");
             let progress = json!({
@@ -814,6 +848,7 @@ pub fn delete_one_mod(
     let mods_store_path = Path::new(mods_store_path);
 
     // 先通过mods_install_files表查询该mod有没有正在使用，没有则允许删除记录/文件
+    // 如果游戏里有安装文件，你把这条记录删除了，将无法通过仅软件清除来卸载该mod，所有不管哪个环境有使用都提示用户先清除一遍
     let mod_install_status = my_db::check_mod_install_status(record_id)
         .map_err(|e| format!("查询Mod安装状态失败: {}", e))?;
     if mod_install_status {

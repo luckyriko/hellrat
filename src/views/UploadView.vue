@@ -1,6 +1,7 @@
 <template>
   <div>
     <div ref="drop" class="area">
+      <div class="env">当前环境：{{ environment.name }}</div>
       <div class="title">拖动一个或多个</div>
       <div class="title">目录 / 7z、zip、rar压缩文件</div>
       <div class="title">至此页面任意位置进行上传，也可手动选择</div>
@@ -187,6 +188,13 @@ onBeforeUnmount(() => {
     font-weight: bold;
     color: #666;
     text-align: center;
+  }
+
+  .env {
+    width: 100%;
+    color: red;
+    text-align: left;
+    font-size: 12px;
   }
 
 }

@@ -57,9 +57,30 @@
         <el-form-item label="Mod安装顺序" prop="app_config_path">
           <el-col :span="22">
             <el-radio-group v-model="gameMod.mods_install_priority">
-              <el-radio value="asc" size="large">正序-第一个优先级最高</el-radio>
-              <el-radio value="desc" size="large">倒序-最后一个优先级最高</el-radio>
+              <el-radio value="asc" size="large">正序 - 第一个安装的优先级最高</el-radio>
+              <el-radio value="desc" size="large">倒序 - 最后一个安装的优先级最高</el-radio>
             </el-radio-group>
+          </el-col>
+        </el-form-item>
+
+        <el-form-item label="文件解压设置" prop="mods_unzip_type">
+          <el-col :span="22">
+            <el-radio-group v-model="gameMod.mods_unzip_type" @change="unzipTypeChange">
+              <el-radio :value="0" size="large">内置插件 - 某些压缩算法不支持</el-radio>
+              <el-radio :value="1" size="large">7-zip.org - 主流解压缩软件</el-radio>
+            </el-radio-group>
+          </el-col>
+        </el-form-item>
+
+        <el-form-item label="7-zip软件目录" required v-show="gameMod.mods_unzip_type == 1">
+          <el-col :span="18">
+            <el-input v-model.trim="gameMod.seven_zip_path" />
+          </el-col>
+          <el-col :span="2" :offset="1">
+            <el-button type="primary" @click="onSevenZipSelect">选择</el-button>
+          </el-col>
+          <el-col :span="2" :offset="1">
+            <el-button type="primary" @click="openDir(gameMod.seven_zip_path)">打开</el-button>
           </el-col>
         </el-form-item>
 
@@ -97,6 +118,11 @@
         <el-form-item label="文字输入间隔" prop="typing_interval">
           <el-col :span="18">
             <el-input v-model.trim="keyboard.typing_interval" clearable inputmode="numeric" />
+          </el-col>
+        </el-form-item>
+        <el-form-item label="回车按下抬起间隔" prop="enter_interval">
+          <el-col :span="18">
+            <el-input v-model.trim="keyboard.enter_interval" clearable inputmode="numeric" />
           </el-col>
         </el-form-item>
         <el-form-item label="窗口宽高w-h" required>
@@ -168,6 +194,11 @@
             <el-input v-model.trim="quicklyChat.typing_interval" clearable inputmode="numeric" />
           </el-col>
         </el-form-item>
+        <el-form-item label="回车按下抬起间隔" prop="enter_interval">
+          <el-col :span="18">
+            <el-input v-model.trim="quicklyChat.enter_interval" clearable inputmode="numeric" />
+          </el-col>
+        </el-form-item>
         <el-form-item label="窗口宽高w-h" required>
           <el-col :span="8">
             <el-form-item prop="width">
@@ -219,11 +250,14 @@ const gameMod = reactive({
   game_data_path: '',
   mods_store_path: '',
   mods_temp_cache_path: '',
-  mods_install_priority: 'asc'
+  mods_install_priority: 'asc',
+  mods_unzip_type: 0,
+  seven_zip_path: "",
 })
 
 const keyboard = reactive({
   typing_interval: '10',
+  enter_interval: '50',
   flag: true,
   shortcut: 'ctrl + space',
   width: '340.0',
@@ -234,6 +268,7 @@ const keyboard = reactive({
 
 const quicklyChat = reactive({
   typing_interval: '10',
+  enter_interval: '50',
   flag: true,
   shortcut: "ctrl + .",
   width: "800.0",
@@ -266,6 +301,9 @@ const gameModFormRules = reactive({
   mods_temp_cache_path: [
     { required: true, message: '请选择临时缓存目录', trigger: 'blur' }
   ],
+  mods_unzip_type: [
+    { required: true, message: '请选择解压方式', trigger: 'blur' }
+  ],
 })
 
 const quicklyChatFormRules = reactive({
@@ -274,6 +312,14 @@ const quicklyChatFormRules = reactive({
   ],
   typing_interval: [
     { required: true, message: '请输入文字输入间隔，单位ms', trigger: 'blur' },
+    {
+      pattern: /^(0|[1-9]\d*)$/,
+      message: '必须是正整数（建议 10）',
+      trigger: 'blur',
+    }
+  ],
+  enter_interval: [
+    { required: true, message: '请输入回车按下抬起间隔，单位ms', trigger: 'blur' },
     {
       pattern: /^(0|[1-9]\d*)$/,
       message: '必须是正整数（建议 10）',
@@ -304,6 +350,14 @@ const keyboardFormRules = reactive({
   ],
   typing_interval: [
     { required: true, message: '请输入文字输入间隔，单位ms', trigger: 'blur' },
+    {
+      pattern: /^(0|[1-9]\d*)$/,
+      message: '必须是正整数（建议 10）',
+      trigger: 'blur',
+    }
+  ],
+  enter_interval: [
+    { required: true, message: '请输入回车按下抬起间隔，单位ms', trigger: 'blur' },
     {
       pattern: /^(0|[1-9]\d*)$/,
       message: '必须是正整数（建议 10）',
@@ -357,15 +411,17 @@ onMounted(async () => {
     // console.log(storeGameMod);
     if (storeGameMod) {
       for (const [key, value] of Object.entries(gameMod)) {
-        gameMod[key] = storeGameMod[key];
+        gameMod[key] = storeGameMod[key] || gameMod[key];
       }
     }
+
+    console.log(gameMod);
 
     const storeKeyboard = await store.get('keyboard');
     // console.log(storeKeyboard);
     if (storeKeyboard) {
       for (const [key, value] of Object.entries(keyboard)) {
-        keyboard[key] = storeKeyboard[key];
+        keyboard[key] = storeKeyboard[key] || keyboard[key];
       }
     }
 
@@ -374,7 +430,7 @@ onMounted(async () => {
     // console.log(storeQuicklyChat);
     if (storeQuicklyChat) {
       for (const [key, value] of Object.entries(quicklyChat)) {
-        quicklyChat[key] = storeQuicklyChat[key];
+        quicklyChat[key] = storeQuicklyChat[key] || quicklyChat[key];
       }
     }
 
@@ -389,6 +445,12 @@ onMounted(async () => {
 
 });
 
+async function unzipTypeChange() {
+  if (gameMod.mods_unzip_type == 1) {
+    gameMod.seven_zip_path = await getSevenZipPath();
+  }
+}
+
 async function openDir(path) {
   if (!path) {
     ElMessage.error('没有设置路径')
@@ -402,6 +464,17 @@ async function openDir(path) {
     ElMessage.error(error || 'Oops, this is a error message.')
 
   }
+}
+
+async function getSevenZipPath() {
+  let path = '';
+  try {
+    path = await invoke('get_seven_zip_path');
+  } catch (error) {
+
+  }
+
+  return path
 }
 
 const onSelect = async () => {
@@ -440,6 +513,17 @@ const onModsTempSelect = async () => {
 
 }
 
+const onSevenZipSelect = async () => {
+  const selectedPath = await open({
+    multiple: false,
+    directory: true,
+    title: "请选择7zip软件安装目录",
+  });
+  if (selectedPath) {
+    gameMod.seven_zip_path = selectedPath;
+  }
+
+}
 
 const onSubmit = async (formEl, formType) => {
   if (!formEl) return
@@ -453,6 +537,10 @@ const onSubmit = async (formEl, formType) => {
         const store = await Store.load('config.json', { autoSave: false })
 
         if (formType == 'game_mod') {
+          if (gameMod.mods_unzip_type == 1 && !gameMod.seven_zip_path) {
+            ElMessage.error('请选择7zip软件的安装目录！')
+            return;
+          }
           await store.set('game_mod', gameMod);
 
         } else if (formType == 'keyboard') {

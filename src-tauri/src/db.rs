@@ -623,18 +623,18 @@ pub fn delete_one_mod(record_id: u64, env_id: u32, delete_file_flag: u8) -> Resu
     let mut conn = open_data_db()?;
     let tx = conn.transaction()?;
     if delete_file_flag == 0 {
-        // 只删除环境Mod记录
+        // 只删除该环境下的Mod记录
         tx.execute(
             "DELETE FROM environment_mods WHERE record_id = ? AND env_id = ?",
             params![record_id, env_id],
         )?;
     } else {
-        // 删除所有记录
+        // 删除所有环境下的Mod记录
         tx.execute(
             "DELETE FROM environment_mods WHERE record_id = ?",
             params![record_id],
         )?;
-
+        // 然后再删除存档记录
         tx.execute("DELETE FROM mods_records WHERE id = ?", params![record_id])?;
     }
     tx.commit()?;
