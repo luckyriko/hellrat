@@ -14,7 +14,13 @@
     <div>
       <div class="box" v-for="(item, index) in files" :key="index">
         <div class="left">{{ index + 1 + '. ' + item.name }}</div>
-        <div class="right" :class="{ 'error': (item.status == 'non-support' || item.status == 're-path') }">
+        <div class="right" v-if="item.status != 'non-support' && item.status != 're-path' && item.status != 'error'">
+          {{ getStatusName(item.status) }}
+        </div>
+        <div class="right error" v-if="item.status == 'non-support' || item.status == 'error'">
+          {{ getStatusName(item.status) }}
+        </div>
+        <div class="right warning" v-if="item.status == 're-path'">
           {{ getStatusName(item.status) }}
         </div>
       </div>
@@ -49,7 +55,7 @@ const getStatusName = (status) => {
       statusName = '已开始';
       break;
     case 're-path':
-      statusName = '重复保存-跳过';
+      statusName = '已保存/重复路径，跳过';
       break;
     case 'copy':
       statusName = '复制ing';
@@ -64,6 +70,9 @@ const getStatusName = (status) => {
       statusName = '保存ing';
     case 'end':
       statusName = '已完成';
+      break;
+    case 'error':
+      statusName = '发生错误，已终止';
       break;
     default:
   }
@@ -105,7 +114,7 @@ async function getEnvironmentList() {
 
   } catch (error) {
     console.error('获取当前环境变量失败:', error);
-    ElMessage.error(error || 'Oops, this is a error message.')
+    ElMessage.error('获取当前环境变量失败:' + error)
 
   }
 }
@@ -128,8 +137,12 @@ async function receiveModsFilePath(paths) {
     console.log('save_mods successfully!');
   } catch (error) {
     console.error('save_mods fail:', error);
-    ElMessage.error(error || '存档失败');
-    files.value = [];
+    ElMessage({
+      showClose: true,
+      message: '错误：' + error,
+      type: 'error',
+      duration: 0
+    })
 
   }
 }
@@ -143,6 +156,8 @@ onMounted(async () => {
       // console.log('User hovering', event.payload.position);
     } else if (event.payload.type === 'drop') {
       console.log('User dropped', event.payload.paths);
+      files.value = [];
+
       let paths = event.payload.paths;
       receiveModsFilePath(paths)
     } else {
@@ -193,8 +208,11 @@ onBeforeUnmount(() => {
   .env {
     width: 100%;
     color: red;
+    font-weight: bold;
     text-align: left;
     font-size: 12px;
+    margin-top: -10px;
+    margin-left: -10px;
   }
 
 }
@@ -227,5 +245,9 @@ onBeforeUnmount(() => {
 
 .error {
   color: red;
+}
+
+.warning {
+  color: orange;
 }
 </style>
