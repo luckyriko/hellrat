@@ -115,6 +115,11 @@
             <el-button type="primary" @click="openDir(form.configDir)">打开</el-button>
           </el-col> -->
         </el-form-item>
+        <el-form-item label="前置延迟" prop="pre_interval">
+          <el-col :span="18">
+            <el-input v-model.trim="keyboard.pre_interval" clearable inputmode="numeric" />
+          </el-col>
+        </el-form-item>
         <el-form-item label="文字输入间隔" prop="typing_interval">
           <el-col :span="18">
             <el-input v-model.trim="keyboard.typing_interval" clearable inputmode="numeric" />
@@ -189,6 +194,11 @@
             <el-button type="primary" @click="openDir(form.configDir)">打开</el-button>
           </el-col> -->
         </el-form-item>
+        <el-form-item label="前置延迟" prop="pre_interval">
+          <el-col :span="18">
+            <el-input v-model.trim="quicklyChat.pre_interval" clearable inputmode="numeric" />
+          </el-col>
+        </el-form-item>
         <el-form-item label="文字输入间隔" prop="typing_interval">
           <el-col :span="18">
             <el-input v-model.trim="quicklyChat.typing_interval" clearable inputmode="numeric" />
@@ -256,6 +266,7 @@ const gameMod = reactive({
 })
 
 const keyboard = reactive({
+  pre_interval: '250',
   typing_interval: '10',
   enter_interval: '50',
   flag: true,
@@ -267,6 +278,7 @@ const keyboard = reactive({
 })
 
 const quicklyChat = reactive({
+  pre_interval: '250',
   typing_interval: '10',
   enter_interval: '50',
   flag: true,
@@ -310,6 +322,14 @@ const quicklyChatFormRules = reactive({
   shortcut: [
     { required: true, message: '请绑定快捷键', trigger: 'blur' }
   ],
+  pre_interval: [
+    { required: true, message: '延迟多久进行输入，单位ms', trigger: 'blur' },
+    {
+      pattern: /^(0|[1-9]\d*)$/,
+      message: '必须是正整数（建议 10）',
+      trigger: 'blur',
+    }
+  ],
   typing_interval: [
     { required: true, message: '请输入文字输入间隔，单位ms', trigger: 'blur' },
     {
@@ -347,6 +367,14 @@ const quicklyChatFormRules = reactive({
 const keyboardFormRules = reactive({
   shortcut: [
     { required: true, message: '请绑定快捷键', trigger: 'blur' }
+  ],
+  pre_interval: [
+    { required: true, message: '延迟多久进行输入，单位ms', trigger: 'blur' },
+    {
+      pattern: /^(0|[1-9]\d*)$/,
+      message: '必须是正整数（建议 10）',
+      trigger: 'blur',
+    }
   ],
   typing_interval: [
     { required: true, message: '请输入文字输入间隔，单位ms', trigger: 'blur' },

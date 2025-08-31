@@ -95,6 +95,7 @@ pub fn initialization_config_json(app: &AppHandle) -> Result<()> {
             json!({
                 "flag": true,
                 "shortcut": "ctrl + space",
+                "pre_interval": "250",
                 "typing_interval": "10",
                 "enter_interval": "50",
                 "width": "340.0",
@@ -112,6 +113,7 @@ pub fn initialization_config_json(app: &AppHandle) -> Result<()> {
             json!({
                 "flag": true,
                 "shortcut": "ctrl + .",
+                "pre_interval": "250",
                 "typing_interval": "10",
                 "enter_interval": "50",
                 "width": "800.0",

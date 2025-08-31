@@ -18,21 +18,9 @@ static ENIGO: Lazy<Mutex<Enigo>> =
 #[tauri::command(async)]
 pub fn confirm_input(app: AppHandle, text: String, label: String) -> Result<(), String> {
     let app_handle_clone = app.clone();
+
     // 隐藏窗口
     my_window::hide_webview_window(app_handle_clone, &label)?;
-
-    // 获取配置
-    let config_label = label.replace("-", "_");
-    let config_json = my_config::get_app_config_json(&app, &config_label).unwrap_or(json!({
-        "typing_interval": "10",
-        "enter_interval": "50"
-    }));
-    let typing_interval = extract_u64(&config_json, "typing_interval", 10);
-    let enter_interval = extract_u64(&config_json, "enter_interval", 50);
-    println!(
-        "enter_interval, typing_interval：{}, {}",
-        enter_interval, typing_interval
-    );
 
     // 初始化模拟键盘输入插件
     // let mut enigo: Enigo = Enigo::new(&Settings::default()).map_err(|e| format!("Enigo初始化失败: {}", e))?;
@@ -40,12 +28,34 @@ pub fn confirm_input(app: AppHandle, text: String, label: String) -> Result<(), 
         .lock()
         .map_err(|e| format!("Enigo实例获取失败: {}", e))?;
 
+    // 获取配置
+    let config_label = label.replace("-", "_");
+    let config_json = my_config::get_app_config_json(&app, &config_label).unwrap_or(json!({
+        "typing_interval": "10",
+        "enter_interval": "50",
+        "pre_interval": "250"
+    }));
+    let typing_interval = extract_u64(&config_json, "typing_interval", 10);
+    let enter_interval = extract_u64(&config_json, "enter_interval", 50);
+    let pre_interval = extract_u64(&config_json, "pre_interval", 250);
+
+    // println!(
+    //     "------config_label, pre_interval, enter_interval, typing_interval, text-----：{}, {}, {}, {}, {}",
+    //     config_label, pre_interval, enter_interval, typing_interval, &text
+    // );
+
+    // 打字输入必须要加这个 不然输入框没有字被输入进去（很奇怪
+    sleep(Duration::from_millis(pre_interval));
+
     // 模拟回车唤起输入框：按下延时50ms左右释放，才能触发游戏里的唤起操作，很奇怪
     if enter_interval == 0 {
+        println!("无延迟回车！");
         enigo
             .key(Key::Return, Click)
             .map_err(|e| format!("模拟回车点击失败: {}", e))?;
     } else {
+        println!("延迟{}ms回车！", enter_interval);
+
         enigo
             .key(Key::Return, Press)
             .map_err(|e| format!("模拟回车按下失败: {}", e))?;
@@ -53,9 +63,8 @@ pub fn confirm_input(app: AppHandle, text: String, label: String) -> Result<(), 
         enigo
             .key(Key::Return, Release)
             .map_err(|e| format!("模拟回车抬起失败: {}", e))?;
+        sleep(Duration::from_millis(enter_interval));
     }
-
-    sleep(Duration::from_millis(enter_interval));
 
     if typing_interval == 0 {
         // 直接输入文字
@@ -63,7 +72,7 @@ pub fn confirm_input(app: AppHandle, text: String, label: String) -> Result<(), 
             .text(&text)
             .map_err(|e| format!("模拟文字输入失败: {}", e))?;
     } else {
-        // 有节奏的输入：每个字符间隔10ms，以确保不会吞字
+        // 有节奏的输入：每个字符间隔10ms，以应对部分玩家出现吞字的情况。
         for ch in text.chars() {
             enigo
                 .text(&ch.to_string())
@@ -73,22 +82,9 @@ pub fn confirm_input(app: AppHandle, text: String, label: String) -> Result<(), 
     }
 
     // 模拟回车发送文字
-    // enigo
-    //     .key(Key::Return, Click)
-    //     .map_err(|e| format!("模拟回车点击失败: {}", e))?;
-    if enter_interval == 0 {
-        enigo
-            .key(Key::Return, Click)
-            .map_err(|e| format!("模拟回车点击失败: {}", e))?;
-    } else {
-        enigo
-            .key(Key::Return, Press)
-            .map_err(|e| format!("模拟回车按下失败: {}", e))?;
-        sleep(Duration::from_millis(enter_interval));
-        enigo
-            .key(Key::Return, Release)
-            .map_err(|e| format!("模拟回车抬起失败: {}", e))?;
-    }
+    enigo
+        .key(Key::Return, Click)
+        .map_err(|e| format!("模拟回车点击失败: {}", e))?;
 
     Ok(())
 }
@@ -142,12 +138,14 @@ pub fn register_global_shortcut(app: &mut tauri::App) -> tauri::Result<()> {
                         println!("Released!");
 
                         if shortcut == &keyboard_shortcut {
-                            println!("ctrl_space Released!");
+                            println!("弹窗输入 Released!");
+
+                            // 不存在则去创建窗口，否则切换窗口可视状态
                             if let Some(webview_window) = app_handle.get_webview_window("keyboard")
                             {
                                 match webview_window.is_visible() {
                                     Ok(visible) => {
-                                        println!("窗口可视旧状态: {}", visible);
+                                        // println!("弹窗输入-窗口可视状态: {}", !visible);
                                         if visible {
                                             let _ = webview_window.hide();
                                         } else {
@@ -156,13 +154,13 @@ pub fn register_global_shortcut(app: &mut tauri::App) -> tauri::Result<()> {
                                                     let _ = webview_window.set_focus();
                                                 }
                                                 Err(e) => {
-                                                    println!("窗口显示失败: {}", e);
+                                                    println!("弹窗输入-窗口显示失败: {}", e);
                                                 }
                                             }
                                         }
                                     }
                                     Err(e) => {
-                                        println!("获取窗口可视状态失败: {}", e);
+                                        println!("弹窗输入-获取窗口可视状态失败: {}", e);
                                         let _ = webview_window.close(); // 存在则关闭
                                     }
                                 }
@@ -179,34 +177,36 @@ pub fn register_global_shortcut(app: &mut tauri::App) -> tauri::Result<()> {
 
                                 // 创建异步任务：如果输入框不存在则去创建该窗口并聚焦
                                 tauri::async_runtime::spawn(async move {
-                                    let params = my_window::WebviewWindowParams {
-                                        label: "keyboard".into(),
-                                        width,
-                                        height,
-                                        x,
-                                        y,
-                                        decorations: false,
-                                        transparent: true,
-                                        shadow: false,
-                                        always_on_top: true,
-                                        url: "keyboard".into(),
-                                        title: None,
-                                    };
+                                    let webview_window = tauri::WebviewWindowBuilder::new(
+                                        &app_handle_clone,
+                                        "keyboard",
+                                        tauri::WebviewUrl::App("keyboard".into()),
+                                    )
+                                    .decorations(false)
+                                    .transparent(true)
+                                    .shadow(true)
+                                    .always_on_top(true)
+                                    .inner_size(width, height)
+                                    .position(x, y)
+                                    .build()
+                                    .unwrap();
 
-                                    my_window::create_webview_window(app_handle_clone, params)
-                                        .await;
+                                    let _ = webview_window.set_focus();
+                                    println!("弹窗输入-窗口已创建");
                                 });
                             }
                         }
 
                         if shortcut == &quickly_chat_shortcut {
-                            println!("ctrl_slash Released!");
+                            println!("快捷聊天 Released!");
+
+                            // 不存在则去创建窗口，否则切换窗口可视状态
                             if let Some(webview_window) =
                                 app_handle.get_webview_window("quickly-chat")
                             {
                                 match webview_window.is_visible() {
                                     Ok(visible) => {
-                                        println!("窗口可视旧状态: {}", visible);
+                                        // println!("快捷聊天-窗口可视状态: {}", !visible);
                                         if visible {
                                             let _ = webview_window.hide();
                                         } else {
@@ -215,13 +215,13 @@ pub fn register_global_shortcut(app: &mut tauri::App) -> tauri::Result<()> {
                                                     let _ = webview_window.set_focus();
                                                 }
                                                 Err(e) => {
-                                                    println!("窗口显示失败: {}", e);
+                                                    println!("快捷聊天-窗口显示失败: {}", e);
                                                 }
                                             }
                                         }
                                     }
                                     Err(e) => {
-                                        println!("获取窗口可视状态失败: {}", e);
+                                        println!("快捷聊天-获取窗口可视状态失败: {}", e);
                                         let _ = webview_window.close(); // 存在则关闭
                                     }
                                 }
@@ -238,25 +238,22 @@ pub fn register_global_shortcut(app: &mut tauri::App) -> tauri::Result<()> {
 
                                 // 创建异步任务：如果输入框不存在则去创建该窗口并聚焦
                                 tauri::async_runtime::spawn(async move {
-                                    std::thread::spawn(move || {
-                                        let webview_window = tauri::WebviewWindowBuilder::new(
-                                            &app_handle_clone,
-                                            "quickly-chat",
-                                            tauri::WebviewUrl::App("quickly-chat".into()),
-                                        )
-                                        .decorations(false) // 关闭系统边框和标题栏
-                                        .transparent(true) // 窗口背景透明
-                                        .shadow(true)
-                                        .always_on_top(true)
-                                        .inner_size(width, height)
-                                        .center()
-                                        .build()
-                                        .unwrap();
+                                    let webview_window = tauri::WebviewWindowBuilder::new(
+                                        &app_handle_clone,
+                                        "quickly-chat",
+                                        tauri::WebviewUrl::App("quickly-chat".into()),
+                                    )
+                                    .decorations(false) // 关闭系统边框和标题栏
+                                    .transparent(true) // 窗口背景透明
+                                    .shadow(true)
+                                    .always_on_top(true)
+                                    .inner_size(width, height)
+                                    .center()
+                                    .build()
+                                    .unwrap();
 
-                                        let _ = webview_window.set_focus();
-
-                                        println!("窗口已创建");
-                                    });
+                                    let _ = webview_window.set_focus();
+                                    println!("快捷聊天-窗口已创建");
                                 });
                             }
                         }

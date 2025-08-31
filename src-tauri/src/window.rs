@@ -1,61 +1,4 @@
-use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Manager};
-
-#[derive(Serialize, Deserialize, Debug)]
-pub struct WebviewWindowParams {
-    pub label: String,
-    pub width: f64,
-    pub height: f64,
-    pub x: f64,
-    pub y: f64,
-    pub decorations: bool,
-    pub transparent: bool,
-    pub shadow: bool,
-    pub always_on_top: bool,
-    pub url: String,
-    pub title: Option<String>,
-}
-
-impl Default for WebviewWindowParams {
-    fn default() -> Self {
-        Self {
-            label: "default".into(),
-            width: 800.0,
-            height: 600.0,
-            x: 0.0,
-            y: 0.0,
-            decorations: false,
-            transparent: false,
-            shadow: false,
-            always_on_top: false,
-            url: "/".into(),
-            title: None,
-        }
-    }
-}
-
-// 创建窗口
-#[tauri::command(async)]
-pub async fn create_webview_window(app_handle: AppHandle, params: WebviewWindowParams) {
-    // println!("{:#?}", params);
-    let webview_window = tauri::WebviewWindowBuilder::new(
-        &app_handle,
-        params.label,
-        tauri::WebviewUrl::App(params.url.into()),
-    )
-    .decorations(params.decorations)
-    .transparent(params.transparent)
-    .shadow(params.shadow)
-    .always_on_top(params.always_on_top)
-    .inner_size(params.width, params.height)
-    .position(params.x, params.y)
-    .build()
-    .unwrap();
-
-    let _ = webview_window.set_focus();
-
-    println!("窗口已创建");
-}
 
 // 隐藏窗口
 #[tauri::command()]
@@ -72,7 +15,6 @@ pub fn hide_webview_window(app: AppHandle, label: &str) -> Result<(), String> {
 }
 
 // 关闭窗口
-#[allow(dead_code)]
 #[tauri::command()]
 pub fn close_webview_window(app: AppHandle, label: &str) -> Result<(), String> {
     if let Some(webview_window) = app.get_webview_window(label) {
@@ -88,7 +30,6 @@ pub fn close_webview_window(app: AppHandle, label: &str) -> Result<(), String> {
 }
 
 // 聚焦已存在的窗口
-#[allow(dead_code)]
 #[tauri::command()]
 pub fn focus_if_webview_window_exists(app: AppHandle, label: &str) -> bool {
     if let Some(webview_window) = app.get_webview_window(label) {
