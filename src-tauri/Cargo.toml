@@ -1,6 +1,6 @@
 [package]
 name = "HellRat"
-version = "2.0.2"
+version = "2.0.3"
 description = "a helldiver2 mods manager app"
 authors = ["luckyriko"]
 edition = "2024"
