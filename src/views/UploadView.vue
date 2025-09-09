@@ -68,6 +68,7 @@ const getStatusName = (status) => {
       break;
     case 'save':
       statusName = '保存ing';
+      break;
     case 'end':
       statusName = '已完成';
       break;
