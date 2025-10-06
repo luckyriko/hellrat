@@ -29,11 +29,11 @@ fn on_window_event(window: &Window, event: &WindowEvent) {
                 api.prevent_close();
                 let answer = window
                     .dialog()
-                    .message("是否关闭应用？")
-                    .title("提示")
+                    .message("是否关闭应用(Close app)？")
+                    .title("提示(Tip)")
                     .buttons(MessageDialogButtons::OkCancelCustom(
-                        "确认".to_string(),
-                        "取消".to_string(),
+                        "确认(Confirm)".to_string(),
+                        "取消(Cancel)".to_string(),
                     ))
                     .blocking_show();
                 // println!("answer {}", answer);
@@ -79,10 +79,9 @@ fn on_window_event(window: &Window, event: &WindowEvent) {
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
-            let _ = app
-                .get_webview_window("main")
-                .expect("no main window")
-                .set_focus();
+            let main_webview_window = app.get_webview_window("main").expect("no main window");
+            let _ = main_webview_window.unminimize();
+            let _ = main_webview_window.set_focus();
         }))
         .plugin(tauri_plugin_process::init())
         .plugin(tauri_plugin_store::Builder::default().build())
