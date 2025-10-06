@@ -1,0 +1,370 @@
+{
+  "about": {
+    "afdian": "afdian",
+    "author": "Author: ",
+    "checkUpdate": "Check for updates",
+    "disclaimer": {
+      "no1": "Universality: To the maximum extent permitted by applicable law, the developer does not provide any warranty of any kind, express or implied, as to the functionality, security or fitness of the software.",
+      "no2": "No warranty: The user expressly understands and agrees that the risk of using this software is solely borne by the user and the software is provided on a \"status\" and \"existent\" basis. \nThe Developer does not provide any warranty of any kind, whether express or implied, including but not limited to warranties of merchantability, fitness for a particular purpose and non-infringement.",
+      "no3": "Risk: Under no circumstances will the developer be liable for any direct, indirect, incidental, special, punitive or consequential damages, including but not limited to loss of data, business interruption, personal information leakage or other damages or losses arising from the use of the software, even if the developer has been advised that such damages may occur.",
+      "no4": "Modifications and Versions: Developers have the right to modify the functionality or features of the Software, and any part of this Disclaimer at any time, and these modifications may be reflected in the form of software updates.",
+      "no5": "Final interpretation right: The final interpretation right of this disclaimer belongs to the developer.",
+      "title": "Disclaimer"
+    },
+    "getUpdate": {
+      "cancel": "Cancel",
+      "getLocationAppVersionError": "The local version failed to get, and the update could not be detected!",
+      "goDownload": "Go to the download page",
+      "latestVersion": "Latest version published: v",
+      "noDesc": "No description yet",
+      "noUpdates": "It's the latest version",
+      "updateDetail": "Updated content:",
+      "afdianDown": "Please go to afdian on the About page to download!"
+    },
+    "qqGroupChatNo": "QQ group no: ",
+    "serviceError": "The server is under maintenance, please try again later!",
+    "title": "About",
+    "userAgreement": {
+      "detail": "This software is available for free and is prohibited for commercial use.",
+      "title": "User Agreement"
+    },
+    "version": "Version: {0}",
+    "versionInfo": "Version Info & Donate: ",
+    "video": "Video tutorial: "
+  },
+  "addEnvironments": {
+    "add": "add",
+    "addFail": "Adding failed:",
+    "addTip": "Please enter the environment configuration name!",
+    "cancel": "Cancel",
+    "cancelEdit": "cancel edit",
+    "copy": "copy",
+    "copyError": "Copy failed:",
+    "delete": "delete",
+    "deleteError": "Deletion failed:",
+    "deleteTip": "The current environment is in use, please switch to another environment and delete it!",
+    "edit": "edit",
+    "editFail": "Modification failed:",
+    "editTip": "Please enter the environment name!",
+    "placeholder": "Please enter the environment name to add",
+    "sameNameError": "The name {name} already exists",
+    "title": "Editing environment"
+  },
+  "home": {
+    "activateAllMods": {
+      "error": "All start failed:",
+      "loadingText": "Enable game patching...",
+      "tip": "Please choose at least one!"
+    },
+    "changeModActivateError": "The switch failed, please refresh the page and try again!",
+    "deleteAllMods": {
+      "envIdError": "The environment variable Id was not obtained",
+      "messageBox": {
+        "cancel": "Cancel",
+        "cancelTip": "Canceled",
+        "confirm": "Sure",
+        "desc": "I also need to delete the file. Please backup it yourself before deleting.",
+        "fail": "Deletion failed:",
+        "loadingText": "Deleting game patches...",
+        "someFail": "Deletion failed: {count} errors in total:",
+        "success": "Delete successfully",
+        "title": "Confirm to delete all Mod records in this environment?"
+      },
+      "modsStorePathError": "Mod archive directory not obtained",
+      "selectError": "Please choose at least one!"
+    },
+    "deleteMod": {
+      "cancelTip": "Canceled",
+      "envIdError": "The environment variable Id was not obtained",
+      "fail": "Deletion failed:",
+      "messageBox": {
+        "cancel": "Cancel",
+        "confirm": "Sure",
+        "desc": "I also need to delete the file. Please backup it yourself before deleting.",
+        "loadingText": "Delete...",
+        "title": "Confirm to delete the Mod record in this environment?"
+      },
+      "modsStorePathError": "Mod archive directory not obtained",
+      "success": "Delete successfully"
+    },
+    "disableAllMods": {
+      "error": "All Forbidden Failed:",
+      "loadingText": "Disabling game patching...",
+      "tip": "Please choose at least one!"
+    },
+    "editDialog": {
+      "author": "Author",
+      "cancel": "Cancel",
+      "confirm": "Confirm",
+      "description": "Detail",
+      "fail": "Modification failed",
+      "icon": "Icon",
+      "imgLink": "Image URL",
+      "imgPath": "Image path",
+      "imgTip": "Please select the preview image",
+      "link": "Link",
+      "name": "Name",
+      "nameTip": "At least 1 character, up to 255 characters",
+      "reset": "Reset",
+      "success": "Modification was successful",
+      "title": "Modify mod information",
+      "version": "Version"
+    },
+    "environment": {
+      "fail": "Failed to get the current environment variable"
+    },
+    "footer": {
+      "delete": "Delete",
+      "donate": "Donate",
+      "off": "Disabled",
+      "on": "Enable",
+      "selectAll": "Select all"
+    },
+    "getModsList": {
+      "fail": "Failed to obtain",
+      "loadingText": "loading..."
+    },
+    "getModsRecords": {
+      "fail": "Failed to obtain",
+      "zeroTip": "No mods to be added yet!"
+    },
+    "header": {
+      "addButton": {
+        "select": "Select existing",
+        "text": "Add",
+        "title": "Please choose one",
+        "upload": "Upload new"
+      },
+      "apply": "Deploy",
+      "clear": "Clear",
+      "envSelect": {
+        "changeError": "The switching environment failed, please refresh the page and try again!",
+        "placeholder": "Please select an environment"
+      },
+      "searchInput": {
+        "placeholder": "Please enter a mod name"
+      },
+      "showType": {
+        "icon": "Icon",
+        "list": "List"
+      },
+      "sortType": {
+        "asc": "Asc",
+        "desc": "Desc"
+      }
+    },
+    "installMods": {
+      "fail": "Installation failed",
+      "loadingText": "Installing game patches...",
+      "success": "Installation successfully"
+    },
+    "listButton": {
+      "delete": "Delete",
+      "detail": "Detail",
+      "edit": "Edit",
+      "open": "Open"
+    },
+    "openDir": {
+      "fail": "Failed to open the Mod directory",
+      "modsStorePathError": "Mod archive directory not set"
+    },
+    "rightClick": {
+      "delete": "Delete",
+      "detail": "Detail",
+      "edit": "Edit",
+      "open": "Open"
+    },
+    "sort": {
+      "error": "The sorting value has failed to be updated. Please refresh it manually and try again!"
+    },
+    "uninstallMods": {
+      "gameDataPathError": "The game data directory is not configured!",
+      "messageBox": {
+        "cancel": "Cancel",
+        "cancelTip": "Canceled",
+        "confirm": "Sure",
+        "desc": "I also need to delete all game patches",
+        "fail": "Deletion failed:",
+        "loadingText": "Game patch clearing...",
+        "success": "Delete successfully",
+        "title": "Confirm to delete all game patches installed through this software?"
+      }
+    },
+    "uploadWindow": {
+      "title": "Mod Archive"
+    }
+  },
+  "keyboard": {
+    "inputPlaceholder": "Please enter text"
+  },
+  "selectMods": {
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "deselectAll": "Cancel Select All",
+    "fail": "Adding failed",
+    "selectAll": "Select all",
+    "success": "Added successfully",
+    "tip": "Please select at least one mod to add!",
+    "title": "Select mod to add to the current environment"
+  },
+  "selectOptions": {
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "fail": "Update failed",
+    "success": "Modification was successful",
+    "tip": "Select at least one of the block and its suboptions to enable the module.",
+    "title": "Select a module"
+  },
+  "setting": {
+    "basic": {
+      "appConfigPath": "Configuration",
+      "asc": "Asc - the first has the highest priority",
+      "builtInPlugin": "Built-in plugins - Some compression algorithms do not support",
+      "desc": "Desc - the last has the highest priority",
+      "gameDataPath": "Game data",
+      "modsInstallPriority": "Mod install priority",
+      "modsStorePath": "Mod archive",
+      "modsTempCachePath": "Temporary cache",
+      "modsUnzipType": "File decompression",
+      "sevenZip": "7-zip.org - mainstream decompression software",
+      "sevenZipPath": "7-zip software",
+      "title": "Basic settings"
+    },
+    "basicFormRules": {
+      "appConfigPathTip": "Please select the software configuration directory",
+      "gameDataPathTip": "Please select the game Data directory",
+      "modsStorePathTip": "Please select the Mod Archive Directory",
+      "modsTempCachePathTip": "Please select the temporary cache directory",
+      "modsUnzipTypeTip": "Please select the decompression method"
+    },
+    "init": {
+      "fail": "Failed to get configuration file",
+      "loadingText": "loading..."
+    },
+    "keyboard": {
+      "enterInterval": "Enter down up interval",
+      "flag": "Turn on/off",
+      "flagTip": "Note: The software takes effect after restart",
+      "positionXAndY": "Position x-y",
+      "preInterval": "Pre-delay",
+      "shortcut": "Evoke/Hide key",
+      "title": "Pop-up window input",
+      "typingInterval": "Text input interval",
+      "widthAndHeight": "Window width-height"
+    },
+    "keyboardFormRules": {
+      "enterIntervalTip1": "Please enter Enter to press the lift interval, unit ms",
+      "enterIntervalTip2": "Must be a positive integer (recommended 10)",
+      "heightTip1": "Please enter the window height",
+      "heightTip2": "Must be a number with a decimal number (such as 1.0)",
+      "positionXTip1": "Please enter the x-axis window coordinates",
+      "positionXTip2": "Must be a number with a decimal number (such as 1.0)",
+      "positionYTip1": "Please enter the window coordinate y-axis",
+      "positionYTip2": "Must be a number with a decimal number (such as 1.0)",
+      "preIntervalTip1": "How long does it take to input, unit ms",
+      "preIntervalTip2": "Must be a positive integer (recommended 250)",
+      "shortcutTip": "Please bind shortcut keys",
+      "typingIntervalTip1": "Please enter text input interval, unit ms",
+      "typingIntervalTip2": "Must be a positive integer (recommended 10)",
+      "widthTip1": "Please enter the window width",
+      "widthTip2": "Must be a number with a decimal number (such as 1.0)"
+    },
+    "openDir": {
+      "fail": "Failed to open",
+      "noPathError": "No path is set"
+    },
+    "operation": {
+      "fail": "Configuration file saving failed",
+      "open": "Open",
+      "reset": "Reset",
+      "save": "Save",
+      "select": "Choose",
+      "success": "Save successfully"
+    },
+    "quicklyChat": {
+      "enterInterval": "Enter down up interval",
+      "flag": "Turn on/off",
+      "flagTip": "Note: The software takes effect after restart",
+      "phrase": "Phrase {no}:",
+      "preInterval": "Pre-delay",
+      "shortcut": "Evoke/Hide key",
+      "title": "Convenient phrases input",
+      "typingInterval": "Text input interval",
+      "widthAndHeight": "Window width-height"
+    },
+    "quicklyChatFormRules": {
+      "enterIntervalTip1": "Please enter Enter to press the lift interval, unit ms",
+      "enterIntervalTip2": "Must be a positive integer (recommended 10)",
+      "heightTip1": "Please enter the window height",
+      "heightTip2": "Must be a number with a decimal number (such as 1.0)",
+      "preIntervalTip1": "How long does it take to input, unit ms",
+      "preIntervalTip2": "Must be a positive integer (recommended 250)",
+      "shortcutTip": "Please bind shortcut keys",
+      "typingIntervalTip1": "Please enter text input interval, unit ms",
+      "typingIntervalTip2": "Must be a positive integer (recommended 10)",
+      "widthTip1": "Please enter the window width",
+      "widthTip2": "Must be a number with a decimal number (such as 1.0)"
+    },
+    "selectGameDataPathTitle": "Please select the data directory under the root directory of the game",
+    "selectModsStorePathTitle": "Please select the Mod Archive Directory",
+    "selectModsTempCachePathTitle": "Please select the temporary cache directory",
+    "selectSevenZipPathTitle": "Please select the 7zip software installation directory",
+    "language": {
+      "label": "Select a language",
+      "placeholder": "Please select your language",
+      "title": "Language settings"
+    }
+  },
+  "showModInfo": {
+    "activate": "Environment mod enabled",
+    "author": "Author",
+    "base": "Basic information",
+    "close": "Close",
+    "desc": "Describe",
+    "envModId": "Environment mod id",
+    "envModInstallFlag": "Environment mod installation status",
+    "envModOptions": "manifest.json of environment mod",
+    "fail": "Failed to obtain:",
+    "icon": "Icon",
+    "installFiles": "Installation files",
+    "link": "Link",
+    "name": "Name",
+    "noInstallFiles": "No files are installed",
+    "options": "Archive Mod's manifest.json",
+    "path": "File path",
+    "sort": "Sort values",
+    "tag": "Label",
+    "title": "Mod details",
+    "type": "Type",
+    "version": "Version"
+  },
+  "upload": {
+    "copy": "Copying",
+    "end": "Completed",
+    "envName": "Current environment: {name}",
+    "error": "An error occurred, terminated",
+    "getEnvironmentFail": "Failed to get the current environment variable:",
+    "getPathFail": "No file path was obtained",
+    "nonSupport": "Unsupported file formats",
+    "re-path": "Saved/repeated path, skipped",
+    "save": "Save",
+    "saveModError": "mistake:",
+    "selectDirs": "Select directorys",
+    "selectDirsTip": "Please select at least one mod directory",
+    "selectFiles": "Select files",
+    "selectFilesTip": "Please select at least one mod compressed file",
+    "start": "Started",
+    "tip1": "Drag one or more",
+    "tip2": "Directory / 7z, zip, Rar compressed files",
+    "tip3": "Upload at any location of this page, or you can manually select it",
+    "unknow": "Unknown status",
+    "unzip": "Decompression",
+    "wait": "Waiting"
+  },
+  "page": {
+    "about": "About",
+    "mods": "Mods",
+    "news": "New version!",
+    "setting": "Setting"
+  }
+}

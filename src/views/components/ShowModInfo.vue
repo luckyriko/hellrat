@@ -1,25 +1,25 @@
 <template>
   <!-- el-dialog 组件，使用 v-model 绑定 props.visible 以实现双向数据绑定 -->
-  <el-dialog v-model="showFlag" title="Mod详情" @close="handleClose" width="50%" top="5vh">
+  <el-dialog v-model="showFlag" :title="$t('showModInfo.title')" @close="handleClose" width="50%" top="5vh">
     <el-scrollbar max-height="78vh">
-      <h3 style="margin-top: 0;">基础信息</h3>
+      <h3 style="margin-top: 0;">{{ $t('showModInfo.base') }}</h3>
       <div style="background-color: #f0f0f0;">
         <el-image :src="image" fit="cover" style="width: 100%;" v-if="image" />
       </div>
       <div class="box" v-for="(value, key, index) in mod" :key="index">
-        <div style="width: 130px;">{{ nameValue[key] }}</div>
+        <div style="width: 130px;margin-bottom: 5px;">{{ nameValue[key] }}</div>
         <div>{{ value }}</div>
       </div>
 
-      <h3>安装文件</h3>
+      <h3>{{ $t('showModInfo.installFiles') }}</h3>
       <div class="box" v-for="(value, index) in files" :key="index" v-if="files.length > 0">
         <div>{{ value }}</div>
       </div>
-      <div v-else>没有文件被安装</div>
+      <div v-else>{{ $t('showModInfo.noInstallFiles') }}</div>
 
       <!-- 底部插槽，提供关闭按钮 -->
       <template #footer>
-        <el-button @click="handleClose">关闭</el-button>
+        <el-button @click="handleClose">{{ $t('showModInfo.close') }}</el-button>
       </template>
     </el-scrollbar>
 
@@ -30,6 +30,9 @@
 import { ref, onUpdated } from 'vue';
 import { invoke, convertFileSrc } from '@tauri-apps/api/core';
 import { join } from '@tauri-apps/api/path';
+import { useI18n } from 'vue-i18n';
+const { t } = useI18n();
+
 const props = defineProps(['recordId', 'envId', 'modsStorePath']);
 const showFlag = defineModel();
 
@@ -40,21 +43,21 @@ const image = ref('');
 const nameValue = {
   id: 'ID',
   uuid: 'UUID',
-  name: '名称',
-  path: '文件路径',
-  tag: '标签',
-  author: '作者',
-  link: '链接',
-  desc: '描述',
-  icon: '图标',
-  sort: '排序值',
-  type: '类型',
-  version: '版本号',
-  options: '存档Mod的manifest.json',
-  activate: '环境Mod启用状态',
-  env_mod_id: '环境Mod标识ID',
-  env_mod_options: '环境Mod的manifest.json',
-  env_mod_install_flag: '环境Mod安装状态'
+  name: t('showModInfo.name'),
+  path: t('showModInfo.path'),
+  tag: t('showModInfo.tag'),
+  author: t('showModInfo.author'),
+  link: t('showModInfo.link'),
+  desc: t('showModInfo.desc'),
+  icon: t('showModInfo.icon'),
+  sort: t('showModInfo.sort'),
+  type: t('showModInfo.type'),
+  version: t('showModInfo.version'),
+  options: t('showModInfo.options'),
+  activate: t('showModInfo.activate'),
+  env_mod_id: t('showModInfo.envModId'),
+  env_mod_options: t('showModInfo.envModOptions'),
+  env_mod_install_flag: t('showModInfo.envModInstallFlag')
 }
 
 onUpdated(() => {
@@ -87,7 +90,7 @@ async function getModDetail() {
     console.log("get_env_mod_info_with_install_files:", modInfo);
   } catch (error) {
     console.error("get_env_mod_info_with_install_files err:", error);
-    ElMessage.error('获取失败：' + String(error))
+    ElMessage.error(t('showModInfo.fail') + String(error))
 
   } finally {
 
@@ -125,5 +128,7 @@ const handleClose = () => {
   display: flex;
   flex-direction: row;
   margin-left: 20px;
+  align-items: center;
+  margin-top: 10px;
 }
 </style>

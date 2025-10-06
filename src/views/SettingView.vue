@@ -3,111 +3,139 @@
     <div class="container">
       <el-row>
         <el-col :span="24">
-          <div class="title">游戏设置</div>
+          <div class="title">{{ $t('setting.basic.title') }}</div>
         </el-col>
       </el-row>
 
-      <el-form :model="gameMod" label-width="150px" style="max-width: 760px" label-position="right" ref="gameModFormRef"
-        :rules="gameModFormRules">
-        <el-form-item label="软件配置目录" prop="app_config_path">
+      <el-form :model="gameMod" label-width="165px" style="max-width: 900px" label-position="right" ref="gameModFormRef"
+        :rules="basicFormRules">
+        <el-form-item :label="$t('setting.basic.appConfigPath')" prop="app_config_path">
           <el-col :span="18">
             <el-input v-model.trim="gameMod.app_config_path" disabled />
           </el-col>
           <el-col :span="2" :offset="1">
-            <el-button type="primary" @click="openDir(gameMod.app_config_path)">打开</el-button>
+            <el-button type="primary" @click="openDir(gameMod.app_config_path)">
+              {{ $t('setting.operation.open') }}
+            </el-button>
           </el-col>
         </el-form-item>
 
-        <el-form-item label="游戏data目录" prop="game_data_path">
+        <el-form-item :label="$t('setting.basic.gameDataPath')" prop="game_data_path">
           <el-col :span="18">
             <el-input v-model.trim="gameMod.game_data_path" />
           </el-col>
           <el-col :span="2" :offset="1">
-            <el-button type="primary" @click="onSelect">选择</el-button>
+            <el-button type="primary" @click="onSelect">{{ $t('setting.operation.select') }}</el-button>
           </el-col>
           <el-col :span="2" :offset="1">
-            <el-button type="primary" @click="openDir(gameMod.game_data_path)">打开</el-button>
+            <el-button type="primary" @click="openDir(gameMod.game_data_path)">
+              {{ $t('setting.operation.open') }}
+            </el-button>
           </el-col>
         </el-form-item>
 
-        <el-form-item label="Mod存档目录" prop="mods_store_path">
+        <el-form-item :label="$t('setting.basic.modsStorePath')" prop="mods_store_path">
           <el-col :span="18">
             <el-input v-model.trim="gameMod.mods_store_path" />
           </el-col>
           <el-col :span="2" :offset="1">
-            <el-button type="primary" @click="onModsSelect">选择</el-button>
+            <el-button type="primary" @click="onModsSelect">{{ $t('setting.operation.select') }}</el-button>
           </el-col>
           <el-col :span="2" :offset="1">
-            <el-button type="primary" @click="openDir(gameMod.mods_store_path)">打开</el-button>
+            <el-button type="primary" @click="openDir(gameMod.mods_store_path)">
+              {{ $t('setting.operation.open') }}
+            </el-button>
           </el-col>
         </el-form-item>
 
-        <el-form-item label="临时缓存目录" prop="mods_temp_cache_path">
+        <el-form-item :label="$t('setting.basic.modsTempCachePath')" prop="mods_temp_cache_path">
           <el-col :span="18">
             <el-input v-model.trim="gameMod.mods_temp_cache_path" />
           </el-col>
           <el-col :span="2" :offset="1">
-            <el-button type="primary" @click="onModsTempSelect">选择</el-button>
+            <el-button type="primary" @click="onModsTempSelect">{{ $t('setting.operation.select') }}</el-button>
           </el-col>
           <el-col :span="2" :offset="1">
-            <el-button type="primary" @click="openDir(gameMod.mods_temp_cache_path)">打开</el-button>
+            <el-button type="primary" @click="openDir(gameMod.mods_temp_cache_path)">
+              {{ $t('setting.operation.open') }}
+            </el-button>
           </el-col>
         </el-form-item>
 
-        <el-form-item label="Mod安装顺序" prop="app_config_path">
+        <el-form-item :label="$t('setting.basic.modsInstallPriority')" prop="mods_install_priority" required>
           <el-col :span="22">
             <el-radio-group v-model="gameMod.mods_install_priority">
-              <el-radio value="asc" size="large">正序 - 第一个安装的优先级最高</el-radio>
-              <el-radio value="desc" size="large">倒序 - 最后一个安装的优先级最高</el-radio>
+              <el-radio value="asc" size="large">{{ $t('setting.basic.asc') }}</el-radio>
+              <el-radio value="desc" size="large">{{ $t('setting.basic.desc') }}</el-radio>
             </el-radio-group>
           </el-col>
         </el-form-item>
 
-        <el-form-item label="文件解压设置" prop="mods_unzip_type">
+        <el-form-item :label="$t('setting.basic.modsUnzipType')" prop="mods_unzip_type">
           <el-col :span="22">
             <el-radio-group v-model="gameMod.mods_unzip_type" @change="unzipTypeChange">
-              <el-radio :value="0" size="large">内置插件 - 某些压缩算法不支持</el-radio>
-              <el-radio :value="1" size="large">7-zip.org - 主流解压缩软件</el-radio>
+              <el-radio :value="0" size="large">{{ $t('setting.basic.builtInPlugin') }}</el-radio>
+              <el-radio :value="1" size="large">{{ $t('setting.basic.sevenZip') }}</el-radio>
             </el-radio-group>
           </el-col>
         </el-form-item>
 
-        <el-form-item label="7-zip软件目录" required v-show="gameMod.mods_unzip_type == 1">
+        <el-form-item :label="$t('setting.basic.sevenZipPath')" required v-show="gameMod.mods_unzip_type == 1">
           <el-col :span="18">
             <el-input v-model.trim="gameMod.seven_zip_path" />
           </el-col>
           <el-col :span="2" :offset="1">
-            <el-button type="primary" @click="onSevenZipSelect">选择</el-button>
+            <el-button type="primary" @click="onSevenZipSelect">{{ $t('setting.operation.select') }}</el-button>
           </el-col>
           <el-col :span="2" :offset="1">
-            <el-button type="primary" @click="openDir(gameMod.seven_zip_path)">打开</el-button>
+            <el-button type="primary" @click="openDir(gameMod.seven_zip_path)">
+              {{ $t('setting.operation.open') }}
+            </el-button>
           </el-col>
         </el-form-item>
 
         <el-form-item>
-          <el-button type="primary" @click="onSubmit(gameModFormRef, 'game_mod')">保存</el-button>
+          <el-button type="primary" @click="onSubmit(gameModFormRef, 'game_mod')">
+            {{ $t('setting.operation.save') }}
+          </el-button>
           <!-- <el-button @click="resetSubmit(gameModFormRef)">重置</el-button> -->
         </el-form-item>
       </el-form>
 
       <el-row>
         <el-col :span="24">
-          <div class="title">弹窗输入</div>
+          <div class="title">{{ $t('setting.language.title') }}</div>
         </el-col>
       </el-row>
 
-      <el-form :model="keyboard" label-width="150px" style="max-width: 760px" label-position="right"
+      <el-form label-width="165px" style="max-width: 760px" label-position="right">
+        <el-form-item :label="$t('setting.language.label')" required>
+          <el-col :span="18">
+            <el-select v-model="currentLang" :placeholder="$t('setting.language.placeholder')" @change="langChange">
+              <el-option v-for="(item, index) in languages" :key="index" :label="item.name" :value="item.code" />
+            </el-select>
+          </el-col>
+        </el-form-item>
+      </el-form>
+
+      <el-row>
+        <el-col :span="24">
+          <div class="title">{{ $t('setting.keyboard.title') }}</div>
+        </el-col>
+      </el-row>
+
+      <el-form :model="keyboard" label-width="165px" style="max-width: 760px" label-position="right"
         ref="keyboardFormRef" :rules="keyboardFormRules">
-        <el-form-item label="开启/关闭功能" required prop="flag">
+        <el-form-item :label="$t('setting.keyboard.flag')" required prop="flag">
           <el-col :span="2">
             <el-switch v-model="keyboard.flag" inline-prompt
               style="--el-switch-on-color: #13ce66; --el-switch-off-color: #ff4949" active-text="Y" inactive-text="N" />
           </el-col>
           <el-col :span="10">
-            <text style="color: red; font-size: 12px;">注意：软件重启后生效</text>
+            <text style="color: red; font-size: 12px;">{{ $t('setting.keyboard.flagTip') }}</text>
           </el-col>
         </el-form-item>
-        <el-form-item label="唤起/隐藏按键" prop="shortcut">
+        <el-form-item :label="$t('setting.keyboard.shortcut')" prop="shortcut">
           <el-col :span="18">
             <el-input v-model.trim="keyboard.shortcut" disabled />
           </el-col>
@@ -115,22 +143,22 @@
             <el-button type="primary" @click="openDir(form.configDir)">打开</el-button>
           </el-col> -->
         </el-form-item>
-        <el-form-item label="前置延迟" prop="pre_interval">
+        <el-form-item :label="$t('setting.keyboard.preInterval')" prop="pre_interval">
           <el-col :span="18">
             <el-input v-model.trim="keyboard.pre_interval" clearable inputmode="numeric" />
           </el-col>
         </el-form-item>
-        <el-form-item label="文字输入间隔" prop="typing_interval">
+        <el-form-item :label="$t('setting.keyboard.typingInterval')" prop="typing_interval">
           <el-col :span="18">
             <el-input v-model.trim="keyboard.typing_interval" clearable inputmode="numeric" />
           </el-col>
         </el-form-item>
-        <el-form-item label="回车按下抬起间隔" prop="enter_interval">
+        <el-form-item :label="$t('setting.keyboard.enterInterval')" prop="enter_interval">
           <el-col :span="18">
             <el-input v-model.trim="keyboard.enter_interval" clearable inputmode="numeric" />
           </el-col>
         </el-form-item>
-        <el-form-item label="窗口宽高w-h" required>
+        <el-form-item :label="$t('setting.keyboard.widthAndHeight')" required>
           <el-col :span="8">
             <el-form-item prop="width">
               <el-input v-model="keyboard.width" clearable inputmode="decimal" />
@@ -146,7 +174,7 @@
           </el-col>
         </el-form-item>
 
-        <el-form-item label="窗口坐标x-y" required>
+        <el-form-item :label="$t('setting.keyboard.positionXAndY')" required>
           <el-col :span="8">
             <el-form-item prop="x">
               <el-input v-model.trim="keyboard.x" clearable inputmode="decimal" />
@@ -163,30 +191,32 @@
         </el-form-item>
 
         <el-form-item>
-          <el-button type="primary" @click="onSubmit(keyboardFormRef, 'keyboard')">保存</el-button>
-          <el-button @click="resetSubmit(keyboardFormRef)">重置</el-button>
+          <el-button type="primary" @click="onSubmit(keyboardFormRef, 'keyboard')">
+            {{ $t('setting.operation.save') }}
+          </el-button>
+          <el-button @click="resetSubmit(keyboardFormRef)">{{ $t('setting.operation.reset') }}</el-button>
 
         </el-form-item>
       </el-form>
 
       <el-row>
         <el-col :span="24">
-          <div class="title">便捷短语</div>
+          <div class="title">{{ $t('setting.quicklyChat.title') }}</div>
         </el-col>
       </el-row>
 
-      <el-form :model="quicklyChat" label-width="150px" style="max-width: 760px" label-position="right"
+      <el-form :model="quicklyChat" label-width="165px" style="max-width: 760px" label-position="right"
         ref="quicklyChatFormRef" :rules="quicklyChatFormRules">
-        <el-form-item label="开启/关闭功能" required prop="flag">
+        <el-form-item :label="$t('setting.quicklyChat.flag')" required prop="flag">
           <el-col :span="2">
             <el-switch v-model="quicklyChat.flag" inline-prompt
               style="--el-switch-on-color: #13ce66; --el-switch-off-color: #ff4949" active-text="Y" inactive-text="N" />
           </el-col>
           <el-col :span="10">
-            <text style="color: red; font-size: 12px;">注意：软件重启后生效</text>
+            <text style="color: red; font-size: 12px;">{{ $t('setting.quicklyChat.flagTip') }}</text>
           </el-col>
         </el-form-item>
-        <el-form-item label="唤起/隐藏按键" prop="shortcut">
+        <el-form-item :label="$t('setting.quicklyChat.shortcut')" prop="shortcut">
           <el-col :span="18">
             <el-input v-model.trim="quicklyChat.shortcut" disabled />
           </el-col>
@@ -194,22 +224,22 @@
             <el-button type="primary" @click="openDir(form.configDir)">打开</el-button>
           </el-col> -->
         </el-form-item>
-        <el-form-item label="前置延迟" prop="pre_interval">
+        <el-form-item :label="$t('setting.quicklyChat.preInterval')" prop="pre_interval">
           <el-col :span="18">
             <el-input v-model.trim="quicklyChat.pre_interval" clearable inputmode="numeric" />
           </el-col>
         </el-form-item>
-        <el-form-item label="文字输入间隔" prop="typing_interval">
+        <el-form-item :label="$t('setting.quicklyChat.typingInterval')" prop="typing_interval">
           <el-col :span="18">
             <el-input v-model.trim="quicklyChat.typing_interval" clearable inputmode="numeric" />
           </el-col>
         </el-form-item>
-        <el-form-item label="回车按下抬起间隔" prop="enter_interval">
+        <el-form-item :label="$t('setting.quicklyChat.enterInterval')" prop="enter_interval">
           <el-col :span="18">
             <el-input v-model.trim="quicklyChat.enter_interval" clearable inputmode="numeric" />
           </el-col>
         </el-form-item>
-        <el-form-item label="窗口宽高w-h" required>
+        <el-form-item :label="$t('setting.quicklyChat.widthAndHeight')" required>
           <el-col :span="8">
             <el-form-item prop="width">
               <el-input v-model="quicklyChat.width" clearable inputmode="decimal" />
@@ -225,15 +255,18 @@
           </el-col>
         </el-form-item>
 
-        <el-form-item :label="`短语 ${index + 1}：`" v-for="(key, index) in chatKeys" :key="index" :prop="`chat.${key}`">
+        <el-form-item :label="$t('setting.quicklyChat.phrase', { no: index + 1 })" v-for="(key, index) in chatKeys"
+          :key="index" :prop="`chat.${key}`">
           <el-col :span="18">
             <el-input v-model.trim="quicklyChat['chat'][key]" clearable />
           </el-col>
         </el-form-item>
 
         <el-form-item>
-          <el-button type="primary" @click="onSubmit(quicklyChatFormRef, 'quickly_chat')">保存</el-button>
-          <el-button @click="resetSubmit(quicklyChatFormRef)">重置</el-button>
+          <el-button type="primary" @click="onSubmit(quicklyChatFormRef, 'quickly_chat')">
+            {{ $t('setting.operation.save') }}
+          </el-button>
+          <el-button @click="resetSubmit(quicklyChatFormRef)">{{ $t('setting.operation.reset') }}</el-button>
         </el-form-item>
       </el-form>
 
@@ -244,16 +277,27 @@
 
 <script setup>
 import { ref, reactive, onMounted } from 'vue';
-import { platform } from '@tauri-apps/plugin-os';
 import { open, save } from '@tauri-apps/plugin-dialog';
 import { invoke } from '@tauri-apps/api/core';
-import { appConfigDir, appDataDir, homeDir, join } from '@tauri-apps/api/path';
-import { exists, mkdir, create, readTextFile, writeTextFile, BaseDirectory } from '@tauri-apps/plugin-fs';
 import { Store } from '@tauri-apps/plugin-store'
+import { useI18n } from 'vue-i18n';
+const { t, locale } = useI18n();
 
 const gameModFormRef = ref();
 const keyboardFormRef = ref();
 const quicklyChatFormRef = ref();
+
+const currentLang = ref(locale.value);
+const languages = [
+  { code: 'en-US', name: 'English' },
+  { code: 'zh-CN', name: '简体中文' }
+];
+
+function langChange(lang) {
+  // console.log(lang, currentLang.value);
+  locale.value = currentLang.value;
+  localStorage.setItem('Language', currentLang.value);
+}
 
 const gameMod = reactive({
   app_config_path: '',
@@ -300,65 +344,65 @@ const quicklyChat = reactive({
 const chatKeys = ['chat1', 'chat2', 'chat3', 'chat4', 'chat5', 'chat6', 'chat7', 'chat8', 'chat9']
 
 
-const gameModFormRules = reactive({
+const basicFormRules = reactive({
   app_config_path: [
-    { required: true, message: '请选择软件配置目录', trigger: 'blur' }
+    { required: true, message: t('setting.basicFormRules.appConfigPathTip'), trigger: 'blur' }
   ],
   game_data_path: [
-    { required: true, message: '请选择游戏Data目录', trigger: 'blur' }
+    { required: true, message: t('setting.basicFormRules.gameDataPathTip'), trigger: 'blur' }
   ],
   mods_store_path: [
-    { required: true, message: '请选择Mod存档目录', trigger: 'blur' }
+    { required: true, message: t('setting.basicFormRules.modsStorePathTip'), trigger: 'blur' }
   ],
   mods_temp_cache_path: [
-    { required: true, message: '请选择临时缓存目录', trigger: 'blur' }
+    { required: true, message: t('setting.basicFormRules.modsTempCachePathTip'), trigger: 'blur' }
   ],
   mods_unzip_type: [
-    { required: true, message: '请选择解压方式', trigger: 'blur' }
+    { required: true, message: t('setting.basicFormRules.modsUnzipTypeTip'), trigger: 'blur' }
   ],
 })
 
 const quicklyChatFormRules = reactive({
   shortcut: [
-    { required: true, message: '请绑定快捷键', trigger: 'blur' }
+    { required: true, message: t('setting.quicklyChatFormRules.shortcutTip'), trigger: 'blur' }
   ],
   pre_interval: [
-    { required: true, message: '延迟多久进行输入，单位ms', trigger: 'blur' },
+    { required: true, message: t('setting.quicklyChatFormRules.preIntervalTip1'), trigger: 'blur' },
     {
       pattern: /^(0|[1-9]\d*)$/,
-      message: '必须是正整数（建议 10）',
+      message: t('setting.quicklyChatFormRules.preIntervalTip2'),
       trigger: 'blur',
     }
   ],
   typing_interval: [
-    { required: true, message: '请输入文字输入间隔，单位ms', trigger: 'blur' },
+    { required: true, message: t('setting.quicklyChatFormRules.typingIntervalTip1'), trigger: 'blur' },
     {
       pattern: /^(0|[1-9]\d*)$/,
-      message: '必须是正整数（建议 10）',
+      message: t('setting.quicklyChatFormRules.typingIntervalTip2'),
       trigger: 'blur',
     }
   ],
   enter_interval: [
-    { required: true, message: '请输入回车按下抬起间隔，单位ms', trigger: 'blur' },
+    { required: true, message: t('setting.quicklyChatFormRules.enterIntervalTip1'), trigger: 'blur' },
     {
       pattern: /^(0|[1-9]\d*)$/,
-      message: '必须是正整数（建议 10）',
+      message: t('setting.quicklyChatFormRules.enterIntervalTip2'),
       trigger: 'blur',
     }
   ],
   width: [
-    { required: true, message: '请输入窗口宽度', trigger: 'blur' },
+    { required: true, message: t('setting.quicklyChatFormRules.widthTip1'), trigger: 'blur' },
     {
       pattern: /^(0|[1-9]\d*)\.\d$/,
-      message: '必须是带一位小数的数字（如 1.0）',
+      message: t('setting.quicklyChatFormRules.widthTip2'),
       trigger: 'blur',
     }
   ],
   height: [
-    { required: true, message: '请输入窗口高度', trigger: 'blur' },
+    { required: true, message: t('setting.quicklyChatFormRules.heightTip1'), trigger: 'blur' },
     {
       pattern: /^(0|[1-9]\d*)\.\d$/,
-      message: '必须是带一位小数的数字（如 1.0）',
+      message: t('setting.quicklyChatFormRules.heightTip2'),
       trigger: 'blur',
     }
   ],
@@ -366,61 +410,61 @@ const quicklyChatFormRules = reactive({
 
 const keyboardFormRules = reactive({
   shortcut: [
-    { required: true, message: '请绑定快捷键', trigger: 'blur' }
+    { required: true, message: t('setting.keyboardFormRules.shortcutTip'), trigger: 'blur' }
   ],
   pre_interval: [
-    { required: true, message: '延迟多久进行输入，单位ms', trigger: 'blur' },
+    { required: true, message: t('setting.keyboardFormRules.preIntervalTip1'), trigger: 'blur' },
     {
       pattern: /^(0|[1-9]\d*)$/,
-      message: '必须是正整数（建议 10）',
+      message: t('setting.keyboardFormRules.preIntervalTip2'),
       trigger: 'blur',
     }
   ],
   typing_interval: [
-    { required: true, message: '请输入文字输入间隔，单位ms', trigger: 'blur' },
+    { required: true, message: t('setting.keyboardFormRules.typingIntervalTip1'), trigger: 'blur' },
     {
       pattern: /^(0|[1-9]\d*)$/,
-      message: '必须是正整数（建议 10）',
+      message: t('setting.keyboardFormRules.typingIntervalTip2'),
       trigger: 'blur',
     }
   ],
   enter_interval: [
-    { required: true, message: '请输入回车按下抬起间隔，单位ms', trigger: 'blur' },
+    { required: true, message: t('setting.keyboardFormRules.enterIntervalTip1'), trigger: 'blur' },
     {
       pattern: /^(0|[1-9]\d*)$/,
-      message: '必须是正整数（建议 10）',
+      message: t('setting.keyboardFormRules.enterIntervalTip2'),
       trigger: 'blur',
     }
   ],
   width: [
-    { required: true, message: '请输入窗口宽度', trigger: 'blur' },
+    { required: true, message: t('setting.keyboardFormRules.widthTip1'), trigger: 'blur' },
     {
       pattern: /^(0|[1-9]\d*)\.\d$/,
-      message: '必须是带一位小数的数字（如 1.0）',
+      message: t('setting.keyboardFormRules.widthTip2'),
       trigger: 'blur',
     }
   ],
   height: [
-    { required: true, message: '请输入窗口高度', trigger: 'blur' },
+    { required: true, message: t('setting.keyboardFormRules.heightTip1'), trigger: 'blur' },
     {
       pattern: /^(0|[1-9]\d*)\.\d$/,
-      message: '必须是带一位小数的数字（如 1.0）',
+      message: t('setting.keyboardFormRules.heightTip2'),
       trigger: 'blur',
     }
   ],
   x: [
-    { required: true, message: '请输入窗口坐标x轴', trigger: 'blur' },
+    { required: true, message: t('setting.keyboardFormRules.positionXTip1'), trigger: 'blur' },
     {
       pattern: /^(0|[1-9]\d*)\.\d$/,
-      message: '必须是带一位小数的数字（如 1.0）',
+      message: t('setting.keyboardFormRules.positionXTip2'),
       trigger: 'blur',
     }
   ],
   y: [
-    { required: true, message: '请输入窗口坐标y轴', trigger: 'blur' },
+    { required: true, message: t('setting.keyboardFormRules.positionYTip1'), trigger: 'blur' },
     {
       pattern: /^(0|[1-9]\d*)\.\d$/,
-      message: '必须是带一位小数的数字（如 1.0）',
+      message: t('setting.keyboardFormRules.positionYTip2'),
       trigger: 'blur',
     }
   ],
@@ -429,7 +473,7 @@ const keyboardFormRules = reactive({
 onMounted(async () => {
   const loading = ElLoading.service({
     lock: true,
-    text: 'Loading',
+    text: t('setting.init.loadingText'),
     background: 'rgba(0, 0, 0, 0.7)',
   })
   try {
@@ -442,8 +486,7 @@ onMounted(async () => {
         gameMod[key] = storeGameMod[key] || gameMod[key];
       }
     }
-
-    console.log(gameMod);
+    // console.log(gameMod);
 
     const storeKeyboard = await store.get('keyboard');
     // console.log(storeKeyboard);
@@ -464,7 +507,7 @@ onMounted(async () => {
 
   } catch (error) {
     console.error('获取配置文件失败:', error);
-    ElMessage.error(error || '获取配置文件失败')
+    ElMessage.error(error || t('setting.init.fail'))
 
   } finally {
     loading.close();
@@ -481,7 +524,7 @@ async function unzipTypeChange() {
 
 async function openDir(path) {
   if (!path) {
-    ElMessage.error('没有设置路径')
+    ElMessage.error(t('setting.openDir.noPathError'))
     return;
   }
   try {
@@ -489,7 +532,7 @@ async function openDir(path) {
     // console.log('Folder opened successfully!');
   } catch (error) {
     console.error('Failed to open folder:', error);
-    ElMessage.error(error || 'Oops, this is a error message.')
+    ElMessage.error(error || t('setting.openDir.fail'))
 
   }
 }
@@ -509,7 +552,7 @@ const onSelect = async () => {
   const selectedPath = await open({
     multiple: false,
     directory: true,
-    title: "请选择游戏里的Mods安装目录",
+    title: t('setting.selectGameDataPathTitle'),
   });
   if (selectedPath) {
     gameMod.game_data_path = selectedPath;
@@ -521,7 +564,7 @@ const onModsSelect = async () => {
   const selectedPath = await open({
     multiple: false,
     directory: true,
-    title: "请选择Mod存档目录",
+    title: t('setting.selectModsStorePathTitle'),
   });
   if (selectedPath) {
     gameMod.mods_store_path = selectedPath;
@@ -533,7 +576,7 @@ const onModsTempSelect = async () => {
   const selectedPath = await open({
     multiple: false,
     directory: true,
-    title: "请选择临时缓存目录",
+    title: t('setting.selectModsTempCachePathTitle'),
   });
   if (selectedPath) {
     gameMod.mods_temp_cache_path = selectedPath;
@@ -545,7 +588,7 @@ const onSevenZipSelect = async () => {
   const selectedPath = await open({
     multiple: false,
     directory: true,
-    title: "请选择7zip软件安装目录",
+    title: t('setting.selectSevenZipPathTitle'),
   });
   if (selectedPath) {
     gameMod.seven_zip_path = selectedPath;
@@ -566,7 +609,7 @@ const onSubmit = async (formEl, formType) => {
 
         if (formType == 'game_mod') {
           if (gameMod.mods_unzip_type == 1 && !gameMod.seven_zip_path) {
-            ElMessage.error('请选择7zip软件的安装目录！')
+            ElMessage.error(t('setting.selectSevenZipPathTitle'))
             return;
           }
           await store.set('game_mod', gameMod);
@@ -586,13 +629,13 @@ const onSubmit = async (formEl, formType) => {
         await store.save();
 
         ElMessage({
-          message: '保存成功',
+          message: t('setting.operation.success'),
           type: 'success',
         })
 
       } catch (error) {
         console.error('配置文件保存失败:', error);
-        ElMessage.error(error || '配置文件保存失败')
+        ElMessage.error(error || t('setting.operation.fail'))
 
       }
     } else {

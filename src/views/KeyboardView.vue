@@ -1,6 +1,7 @@
 <template>
-  <el-input style="height: 100vh;" :autofocus="true" v-model.lazy="text"
-    size="large" placeholder="请输入文字" clearable @keydown.enter="confirmInput" autocomplete="off" :validate-event="false">
+  <el-input style="height: 100vh;" :autofocus="true" v-model.lazy="text" size="large"
+    :placeholder="$t('keyboard.inputPlaceholder')" clearable @keydown.enter="confirmInput" autocomplete="off"
+    :validate-event="false">
     <!-- <template #append>
       <el-button @click="confirmInput"><i-ep-promotion /></el-button>
     </template> -->

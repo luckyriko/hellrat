@@ -1,7 +1,7 @@
 <template>
   <!-- el-dialog 组件，使用 v-model 绑定 props.visible 以实现双向数据绑定 -->
-  <el-dialog v-model="showFlag" title="自定义对话框" @close="handleClose" width="90%" top="5vh">
-    <p>请开始你的选择把。</p>
+  <el-dialog v-model="showFlag" :title="$t('selectOptions.title')" @close="handleClose" width="90%" top="5vh">
+    <p>{{ $t('selectOptions.tip') }}</p>
 
     <el-scrollbar max-height="66vh">
       <el-collapse v-model="activeNames" :before-collapse="beforeCollapse" :accordion="true" class="content">
@@ -30,14 +30,10 @@
                 </template>
               </el-checkbox>
               <div @click="handleClick(index)" style="flex: 1;" v-if="item.SubOptions && item.SubOptions.length > 0">
-                <span v-if="item.Description">
-                  （{{ item.Description }}）
-                </span>
+                <span v-if="item.Description" style="padding: 0 5px;">({{ item.Description }})</span>
               </div>
               <div v-else>
-                <span v-if="item.Description">
-                  （{{ item.Description }}）
-                </span>
+                <span v-if="item.Description" style="padding: 0 5px;">({{ item.Description }})</span>
               </div>
 
             </div>
@@ -62,9 +58,7 @@
                   </el-popover>
 
                   {{ itm.Name }}
-                  <span v-if="itm.Description">
-                    （{{ itm.Description }}）
-                  </span>
+                  <span v-if="itm.Description" style="padding: 0 5px;">({{ itm.Description }})</span>
                 </div>
               </template>
 
@@ -86,9 +80,9 @@
 
     <!-- 底部插槽，提供关闭按钮 -->
     <template #footer>
-      <el-button @click="handleClose">取消</el-button>
+      <el-button @click="handleClose">{{ $t('selectOptions.cancel') }}</el-button>
       <el-button type="primary" :loading="loadingFlag" @click="onSubmit">
-        确认
+        {{ $t('selectOptions.confirm') }}
       </el-button>
     </template>
   </el-dialog>
@@ -98,6 +92,8 @@
 import { ref, toRaw, reactive, onMounted, onUpdated, computed, watchEffect } from 'vue';
 import { invoke, convertFileSrc } from '@tauri-apps/api/core';
 import { join } from '@tauri-apps/api/path';
+import { useI18n } from 'vue-i18n';
+const { t } = useI18n();
 
 const props = defineProps(['id', 'modsStorePath', 'envId'])
 // const props = defineProps({
@@ -175,14 +171,14 @@ const onSubmit = async () => {
 
     await invoke("update_environment_mod_options", { id: mod.value.env_mod_id, options: JSON.stringify(optionsVal) });
     ElMessage({
-      message: '修改成功',
+      message: t('selectOptions.success'),
       type: 'success',
     })
     handleClose();
 
   } catch (error) {
     console.error("更新失败", error);
-    ElMessage.error(error || 'Oops, this is a error message.')
+    ElMessage.error(error || t('selectOptions.fail'))
 
   }
 }

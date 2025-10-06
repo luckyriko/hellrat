@@ -1,8 +1,8 @@
 <template>
   <!-- el-dialog 组件，使用 v-model 绑定 props.visible 以实现双向数据绑定 -->
-  <el-dialog v-model="showFlag" title="选择Mod添加到当前环境" @close="handleClose" width="60%" top="5vh">
-    <el-button type="primary" @click="selectAll">全选</el-button>
-    <el-button type="primary" @click="unselectAll">取消全选</el-button>
+  <el-dialog v-model="showFlag" :title="$t('selectMods.title')" @close="handleClose" width="60%" top="5vh">
+    <el-button type="primary" @click="selectAll">{{ $t('selectMods.selectAll') }}</el-button>
+    <el-button type="primary" @click="unselectAll">{{ $t('selectMods.deselectAll') }}</el-button>
 
     <el-scrollbar max-height="66vh" style="margin-top: 10px;">
       <el-checkbox-group v-model="checkList" @change="selectModsChange">
@@ -31,9 +31,9 @@
 
     <!-- 底部插槽，提供关闭按钮 -->
     <template #footer>
-      <el-button @click="handleClose">取消</el-button>
+      <el-button @click="handleClose">{{ $t('selectMods.cancel') }}</el-button>
       <el-button type="primary" @click="onSubmit">
-        确认
+        {{ $t('selectMods.confirm') }}
       </el-button>
     </template>
   </el-dialog>
@@ -68,21 +68,21 @@ const unselectAll = async () => {
 
 const onSubmit = async () => {
   if (checkList.value.length == 0) {
-    ElMessage.error('请至少选择一个Mod进行添加！');
+    ElMessage.error(t('selectMods.tip'));
     return
   }
 
   try {
     await invoke("add_mods_to_environment", { env_id: props.envId, ids: checkList.value });
     ElMessage({
-      message: '添加成功',
+      message: t('selectMods.success'),
       type: 'success',
     })
     emit('refresh');
     handleClose();
   } catch (error) {
     console.error("添加失败", error);
-    ElMessage.error(error || 'Oops, this is a error message.')
+    ElMessage.error(error || t('selectMods.fail'))
 
   }
 }

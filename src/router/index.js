@@ -20,16 +20,8 @@ const router = createRouter({
           component: () => import('../views/AboutView.vue'),
         },
         {
-          path: 'add',
-          component: () => import('../views/AddView.vue'),
-        },
-        {
           path: 'import',
           component: () => import('../views/ImportView.vue'),
-        },
-        {
-          path: 'help',
-          component: () => import('../views/HelpView.vue'),
         },
         {
           path: 'setting',

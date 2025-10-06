@@ -9,19 +9,19 @@
 <script setup>
 import { invoke } from '@tauri-apps/api/core';
 import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow';
-import { ref, reactive, onMounted  } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
 import { Store } from '@tauri-apps/plugin-store'
 
 const chat = reactive({
-    chat1: '你好！',
-    chat2: '再见！',
-    chat3: 'Ciallo～(∠・ω< )⌒☆',
-    chat4: '',
-    chat5: '',
-    chat6: '',
-    chat7: '',
-    chat8: '',
-    chat9: '',
+  chat1: '你好！',
+  chat2: '再见！',
+  chat3: 'Ciallo～(∠・ω< )⌒☆',
+  chat4: '',
+  chat5: '',
+  chat6: '',
+  chat7: '',
+  chat8: '',
+  chat9: '',
 })
 
 onMounted(async () => {
@@ -44,7 +44,7 @@ onMounted(async () => {
 
   } catch (error) {
     console.error('获取配置文件失败:', error);
-    ElMessage.error(error || '获取配置文件失败')
+    ElMessage.error(error)
 
   } finally {
     loading.close();

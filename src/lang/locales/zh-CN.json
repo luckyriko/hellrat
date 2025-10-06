@@ -1,0 +1,370 @@
+{
+  "home": {
+    "header": {
+      "addButton": {
+        "title": "请选择一个吧？！",
+        "upload": "新增上传",
+        "select": "选择现有",
+        "text": "添加"
+      },
+      "showType": {
+        "list": "列表",
+        "icon": "图标"
+      },
+      "sortType": {
+        "asc": "正序",
+        "desc": "倒序"
+      },
+      "envSelect": {
+        "placeholder": "请选择一个环境",
+        "changeError": "切换环境失败，请刷新页面重试！"
+      },
+      "searchInput": {
+        "placeholder": "请输入名称"
+      },
+      "apply": "应用",
+      "clear": "清除"
+    },
+    "listButton": {
+      "open": "打开",
+      "detail": "详情",
+      "edit": "编辑",
+      "delete": "删除"
+    },
+    "rightClick": {
+      "open": "打开",
+      "detail": "详情",
+      "edit": "编辑",
+      "delete": "删除"
+    },
+    "footer": {
+      "selectAll": "全选",
+      "on": "启用",
+      "off": "禁用",
+      "delete": "删除",
+      "donate": "如果你认可开发者的辛勤劳作 请他喝杯饮料吧"
+    },
+    "editDialog": {
+      "title": "修改Mod信息",
+      "name": "名称",
+      "icon": "图标",
+      "author": "作者",
+      "version": "版本",
+      "link": "链接",
+      "description": "详情",
+      "imgPath": "图片路径",
+      "imgLink": "图片网址",
+      "cancel": "取消",
+      "reset": "重置",
+      "confirm": "确认",
+      "imgTip": "请选择预览图",
+      "nameTip": "最少1个字符，最长255个字符",
+      "success": "修改成功",
+      "fail": "修改失败"
+    },
+    "changeModActivateError": "切换失败，请刷新页面重试！",
+    "activateAllMods": {
+      "tip": "请至少选择一个！",
+      "loadingText": "正在启用游戏补丁ing...",
+      "error": "全启失败："
+    },
+    "disableAllMods": {
+      "tip": "请至少选择一个！",
+      "loadingText": "正在禁用游戏补丁ing...",
+      "error": "全禁失败："
+    },
+    "deleteAllMods": {
+      "modsStorePathError": "未获取到Mod存档目录",
+      "envIdError": "未获取到环境变量Id",
+      "selectError": "请至少选择一个！",
+      "messageBox": {
+        "title": "确认删除该环境下的所有Mod记录吗？",
+        "desc": "我还需要删除文件，删除前请自行备份。",
+        "confirm": "确定",
+        "cancel": "取消",
+        "loadingText": "正在删除游戏补丁ing...",
+        "success": "删除成功",
+        "fail": "删除失败：",
+        "someFail": "删除失败：共{count}个错误：",
+        "cancelTip": "已取消"
+      }
+    },
+    "sort": {
+      "error": "排序值更新失败，请手动刷新后重试！"
+    },
+    "uploadWindow": {
+      "title": "Mod存档"
+    },
+    "installMods": {
+      "loadingText": "正在安装游戏补丁...",
+      "success": "安装成功",
+      "fail": "安装失败"
+    },
+    "openDir": {
+      "modsStorePathError": "Mod存档目录未设置",
+      "fail": "打开Mod目录失败"
+    },
+    "environment": {
+      "fail": "获取当前环境变量失败"
+    },
+    "uninstallMods": {
+      "gameDataPathError": "游戏data目录未配置！",
+      "messageBox": {
+        "title": "确认删除通过本软件安装的所有游戏补丁？",
+        "desc": "我还需要删除所有游戏补丁",
+        "confirm": "确定",
+        "cancel": "取消",
+        "loadingText": "游戏补丁清除中...",
+        "success": "删除成功",
+        "fail": "删除失败：",
+        "cancelTip": "已取消"
+      }
+    },
+    "deleteMod": {
+      "modsStorePathError": "未获取到Mod存档目录",
+      "envIdError": "未获取到环境变量Id",
+      "messageBox": {
+        "title": "确认删除该环境下的Mod记录吗？",
+        "desc": "我还需要删除文件，删除前请自行备份。",
+        "confirm": "确定",
+        "cancel": "取消",
+        "loadingText": "删除中..."
+      },
+      "success": "删除成功",
+      "fail": "删除失败：",
+      "cancelTip": "已取消"
+    },
+    "getModsList": {
+      "loadingText": "加载中...",
+      "fail": "获取失败"
+    },
+    "getModsRecords": {
+      "zeroTip": "暂无可添加Mod！",
+      "fail": "获取失败"
+    }
+  },
+  "setting": {
+    "basic": {
+      "title": "基础设置",
+      "appConfigPath": "软件配置目录",
+      "gameDataPath": "游戏data目录",
+      "modsStorePath": "Mod存档目录",
+      "modsTempCachePath": "临时缓存目录",
+      "modsInstallPriority": "Mod安装顺序",
+      "modsUnzipType": "文件解压设置",
+      "sevenZipPath": "7-zip软件目录",
+      "asc": "正序 - 第一个Mod的优先级最高",
+      "desc": "倒序 - 最后一个Mod的优先级最高",
+      "builtInPlugin": "内置插件 - 某些压缩算法不支持",
+      "sevenZip": "7-zip.org - 主流解压缩软件"
+    },
+    "operation": {
+      "open": "打开",
+      "select": "选择",
+      "save": "保存",
+      "reset": "重置",
+      "success": "保存成功",
+      "fail": "配置文件保存失败"
+    },
+    "keyboard": {
+      "title": "弹窗输入",
+      "flag": "开启/关闭功能",
+      "shortcut": "唤起/隐藏按键",
+      "flagTip": "注意：软件重启后生效",
+      "preInterval": "前置延迟",
+      "typingInterval": "文字输入间隔",
+      "enterInterval": "回车按下抬起间隔",
+      "widthAndHeight": "窗口宽高w-h",
+      "positionXAndY": "窗口坐标x-y"
+    },
+    "quicklyChat": {
+      "title": "便捷短语",
+      "flag": "开启/关闭功能",
+      "flagTip": "注意：软件重启后生效",
+      "shortcut": "唤起/隐藏按键",
+      "preInterval": "前置延迟",
+      "typingInterval": "文字输入间隔",
+      "enterInterval": "回车按下抬起间隔",
+      "widthAndHeight": "窗口宽高w-h",
+      "phrase": "短语{no}："
+    },
+    "basicFormRules": {
+      "appConfigPathTip": "请选择软件配置目录",
+      "gameDataPathTip": "请选择游戏Data目录",
+      "modsStorePathTip": "请选择Mod存档目录",
+      "modsTempCachePathTip": "请选择临时缓存目录",
+      "modsUnzipTypeTip": "请选择解压方式"
+    },
+    "quicklyChatFormRules": {
+      "shortcutTip": "请绑定快捷键",
+      "preIntervalTip1": "延迟多久进行输入，单位ms",
+      "preIntervalTip2": "必须是正整数（建议 250）",
+      "typingIntervalTip1": "请输入文字输入间隔，单位ms",
+      "typingIntervalTip2": "必须是正整数（建议 10）",
+      "enterIntervalTip1": "请输入回车按下抬起间隔，单位ms",
+      "enterIntervalTip2": "必须是正整数（建议 10）",
+      "widthTip1": "请输入窗口宽度",
+      "widthTip2": "必须是带一位小数的数字（如 1.0）",
+      "heightTip1": "请输入窗口高度",
+      "heightTip2": "必须是带一位小数的数字（如 1.0）"
+    },
+    "keyboardFormRules": {
+      "shortcutTip": "请绑定快捷键",
+      "preIntervalTip1": "延迟多久进行输入，单位ms",
+      "preIntervalTip2": "必须是正整数（建议 250）",
+      "typingIntervalTip1": "请输入文字输入间隔，单位ms",
+      "typingIntervalTip2": "必须是正整数（建议 10）",
+      "enterIntervalTip1": "请输入回车按下抬起间隔，单位ms",
+      "enterIntervalTip2": "必须是正整数（建议 10）",
+      "widthTip1": "请输入窗口宽度",
+      "widthTip2": "必须是带一位小数的数字（如 1.0）",
+      "heightTip1": "请输入窗口高度",
+      "heightTip2": "必须是带一位小数的数字（如 1.0）",
+      "positionXTip1": "请输入窗口坐标x轴",
+      "positionXTip2": "必须是带一位小数的数字（如 1.0）",
+      "positionYTip1": "请输入窗口坐标y轴",
+      "positionYTip2": "必须是带一位小数的数字（如 1.0）"
+    },
+    "init": {
+      "loadingText": "加载中...",
+      "fail": "获取配置文件失败"
+    },
+    "openDir": {
+      "noPathError": "没有设置路径",
+      "fail": "打开失败"
+    },
+    "selectGameDataPathTitle": "请选择游戏根目录下的data目录",
+    "selectModsStorePathTitle": "请选择Mod存档目录",
+    "selectModsTempCachePathTitle": "请选择临时缓存目录",
+    "selectSevenZipPathTitle": "请选择7zip软件安装目录",
+    "language": {
+      "title": "语言设置",
+      "label": "选择语言",
+      "placeholder": "请选择您的语言"
+    }
+  },
+  "about": {
+    "title": "关于",
+    "version": "版本号：{0}",
+    "checkUpdate": "检查更新",
+    "author": "作者：",
+    "qqGroupChatNo": "QQ群：",
+    "video": "视频教程：",
+    "versionInfo": "版本发布&捐赠：",
+    "afdian": "爱发电",
+    "userAgreement": {
+      "title": "用户协议",
+      "detail": "本软件免费提供，禁止商业用途。"
+    },
+    "disclaimer": {
+      "title": "免责声明",
+      "no1": "通用性：在适用法律允许的最大范围内，开发者不对软件的功能性、安全性或适用性提供任何形式的明示或暗示的保证。",
+      "no2": "无担保：用户明确理解并同意，使用本软件的风险完全由用户自己承担，软件以\"现状\"和\"现有\"基础提供。开发者不提供任何形式的担保，无论是明示还是暗示的，包括但不限于适销性、特定用途的适用性和非侵权的担保。",
+      "no3": "风险承担：在任何情况下，开发者都不对任何直接的、间接的、偶然的、特殊的、惩罚性的或后果性的损害承担责任，包括但不限于使用本软件产生的数据丢失、业务中断、个人信息泄露或其他损害、损失，即使开发者已被告知可能发生此类损害。",
+      "no4": "修改和版本：开发者有权在任何时间修改软件的功能或特性，以及本免责声明的任何部分，并且这些修改可能会以软件更新的形式体现。",
+      "no5": "最终解释权：本免责声明的最终解释权归开发者所有。"
+    },
+    "getUpdate": {
+      "getLocationAppVersionError": "本地版本获取失败，无法检测更新！",
+      "noDesc": "暂无描述",
+      "updateDetail": "更新内容：",
+      "latestVersion": "最新版本：v",
+      "goDownload": "前往下载页",
+      "cancel": "取消",
+      "noUpdates": "已经是最新版本了",
+      "afdianDown": "请在关于页前往爱发电下载！"
+    },
+    "serviceError": "服务器正在维护中，请稍后再试！"
+  },
+  "keyboard": {
+    "inputPlaceholder": "请输入文字"
+  },
+  "addEnvironments": {
+    "title": "编辑环境",
+    "placeholder": "请输入环境名称",
+    "add": "添加",
+    "edit": "修改",
+    "cancelEdit": "取消修改",
+    "copy": "复制",
+    "delete": "删除",
+    "cancel": "取消",
+    "addTip": "请输入环境配置名称！",
+    "addFail": "添加失败：",
+    "editTip": "请输入环境名称！",
+    "editFail": "修改失败：",
+    "sameNameError": "该名称{name}已存在",
+    "copyError": "复制失败：",
+    "deleteTip": "当前环境正在使用，请切换到其它环境再删除！",
+    "deleteError": "删除失败："
+  },
+  "selectOptions": {
+    "title": "选择模组",
+    "tip": "选中方块及其子选项之一以启用模组。",
+    "cancel": "取消",
+    "confirm": "确认",
+    "success": "修改成功",
+    "fail": "更新失败"
+  },
+  "selectMods": {
+    "title": "选择Mod添加到当前环境",
+    "selectAll": "全选",
+    "deselectAll": "取消全选",
+    "cancel": "取消",
+    "confirm": "确认",
+    "tip": "请至少选择一个Mod进行添加！",
+    "success": "添加成功",
+    "fail": "添加失败"
+  },
+  "showModInfo": {
+    "title": "Mod详情",
+    "base": "基础信息",
+    "installFiles": "安装文件",
+    "noInstallFiles": "没有文件被安装",
+    "close": "关闭",
+    "name": "名称",
+    "path": "文件路径",
+    "tag": "标签",
+    "author": "作者",
+    "link": "链接",
+    "desc": "描述",
+    "icon": "图标",
+    "sort": "排序值",
+    "type": "类型",
+    "version": "版本号",
+    "options": "存档Mod的manifest.json",
+    "activate": "环境Mod启用状态",
+    "envModId": "环境Mod标识ID",
+    "envModOptions": "环境Mod的manifest.json",
+    "envModInstallFlag": "环境Mod安装状态",
+    "fail": "获取失败："
+  },
+  "upload": {
+    "envName": "当前环境：{name}",
+    "tip1": "拖动一个或多个",
+    "tip2": "目录 / 7z、zip、rar压缩文件",
+    "tip3": "至此页面任意位置进行上传，也可手动选择",
+    "selectDirs": "选择目录",
+    "selectFiles": "选择文件",
+    "unknow": "未知状态",
+    "wait": "等待ing",
+    "start": "已开始",
+    "re-path": "已保存/重复路径，跳过",
+    "copy": "复制ing",
+    "unzip": "解压ing",
+    "nonSupport": "不支持的文件格式",
+    "save": "保存ing",
+    "end": "已完成",
+    "error": "发生错误，已终止",
+    "selectFilesTip": "请选择至少一个Mod压缩文件",
+    "selectDirsTip": "请选择至少一个Mod目录",
+    "getEnvironmentFail": "获取当前环境变量失败:",
+    "getPathFail": "没有获取到文件路径",
+    "saveModError": "错误："
+  },
+  "page": {
+    "mods": "模组",
+    "setting": "设置",
+    "about": "关于",
+    "news": "新版本！"
+  }
+}

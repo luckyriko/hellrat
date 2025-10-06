@@ -5,6 +5,8 @@ import { getVersion } from '@tauri-apps/api/app';
 import { open } from '@tauri-apps/plugin-shell';
 import { fetch } from "@tauri-apps/plugin-http";
 import semver from "semver";
+import { useI18n } from 'vue-i18n';
+const { t } = useI18n();
 
 // import { invoke } from "@tauri-apps/api/core";
 // const greetMsg = ref("");
@@ -31,14 +33,14 @@ onMounted(async () => {
     // console.log(response.status);  // e.g. 200
     // console.log(response.statusText); // e.g. "OK"
     if (response.status != 200) {
-      ElMessage.error('服务器正在维护中，请稍后再试！')
+      // ElMessage.error(t('about.serviceError'))
       return;
     }
 
-    const { version: latestVersion, upMsg: mm = '暂无描述', downUrl: dd = '' } = await response.json();
+    const { version: latestVersion, upMsg: mm = t('about.getUpdate.noDesc'), downUrl: dd = '' } = await response.json();
     if (semver.gt(latestVersion, version)) {
       console.log('有新版本发布了！');
-      newVersion.value = `v${latestVersion}已发布`;
+      newVersion.value = t('about.getUpdate.latestVersion') + latestVersion;
       upMsg.value = mm;
       downUrl.value = dd;
     }
@@ -51,11 +53,11 @@ onMounted(async () => {
 
 const ddup = async () => {
   ElMessageBox.confirm(
-    '更新内容：' + upMsg.value,
-    '最新版本：' + newVersion.value,
+    t('about.getUpdate.updateDetail') + upMsg.value,
+    t('about.getUpdate.latestVersion') + newVersion.value,
     {
-      confirmButtonText: '前往下载页',
-      cancelButtonText: '取消',
+      confirmButtonText: t('about.getUpdate.goDownload'),
+      cancelButtonText: t('about.getUpdate.cancel'),
       type: 'info',
     }
   )
@@ -63,7 +65,7 @@ const ddup = async () => {
       if (downUrl.value) {
         await open(downUrl.value);
       } else {
-        ElMessage.error('请在关于页前往爱发电下载！')
+        ElMessage.error(t('about.getUpdate.afdianDown'))
 
       }
     })
@@ -83,20 +85,18 @@ const ddup = async () => {
         </div>
       </header>
       <nav>
-        <RouterLink to="/home" class="nav-link" active-class="active">列表</RouterLink>
-        <!-- <RouterLink to="/add" class="nav-link" active-class="active">安装</RouterLink> -->
-        <!-- <RouterLink to="/import" class="nav-link">导入</RouterLink> -->
-        <RouterLink to="/setting" class="nav-link" active-class="active">设置</RouterLink>
-        <!-- <RouterLink to="/help" class="nav-link" active-class="active">帮助</RouterLink> -->
-        <RouterLink to="/about" class="nav-link" active-class="active">关于</RouterLink>
+        <RouterLink to="/home" class="nav-link" active-class="active">{{ $t('page.mods') }}</RouterLink>
+        <RouterLink to="/setting" class="nav-link" active-class="active">{{ $t('page.setting') }}</RouterLink>
+        <RouterLink to="/about" class="nav-link" active-class="active">{{ $t('page.about') }}</RouterLink>
         <!-- <RouterLink to="/test" class="nav-link" active-class="active">测试</RouterLink> -->
-        <!-- <RouterLink to="/upload" class="nav-link" active-class="active">shangchuan</RouterLink> -->
 
       </nav>
 
       <footer class="bottom" v-if="newVersion" @click="ddup">
         <div class="version">
-          <el-icon size="15" color="orange"><i-ep-cold-drink /></el-icon> <span style="color: red;">新版本！</span>
+          <el-icon size="15" color="orange"><i-ep-cold-drink /></el-icon> <span style="color: red;">
+            {{ $t('page.news') }}
+          </span>
         </div>
         <div class="version">{{ newVersion }}</div>
       </footer>

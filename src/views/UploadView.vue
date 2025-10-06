@@ -1,14 +1,14 @@
 <template>
   <div>
     <div ref="drop" class="area">
-      <div class="env">当前环境：{{ environment.name }}</div>
-      <div class="title">拖动一个或多个</div>
-      <div class="title">目录 / 7z、zip、rar压缩文件</div>
-      <div class="title">至此页面任意位置进行上传，也可手动选择</div>
+      <div class="env">{{ $t('upload.envName', { name: environment.name }) }}</div>
+      <div class="title">{{ $t('upload.tip1') }}</div>
+      <div class="title">{{ $t('upload.tip2') }}</div>
+      <div class="title">{{ $t('upload.tip3') }}</div>
 
       <div class="bb">
-        <el-button type="primary" @click="selectDirs">选择目录</el-button>
-        <el-button type="primary" @click="selectFiles">选择文件</el-button>
+        <el-button type="primary" @click="selectDirs">{{ $t('upload.selectDirs') }}</el-button>
+        <el-button type="primary" @click="selectFiles">{{ $t('upload.selectFiles') }}</el-button>
       </div>
     </div>
     <div>
@@ -36,6 +36,8 @@ import { ref } from 'vue';
 import { listen } from '@tauri-apps/api/event';
 import { basename } from '@tauri-apps/api/path';
 import { open } from '@tauri-apps/plugin-dialog';
+import { useI18n } from 'vue-i18n';
+const { t } = useI18n();
 
 const files = ref([]);
 
@@ -46,34 +48,34 @@ const environment = ref({
 });
 
 const getStatusName = (status) => {
-  let statusName = '未知状态';
+  let statusName = t('upload.unknow');
   switch (status) {
     case 'wait':
-      statusName = '等待ing';
+      statusName = t('upload.wait');
       break;
     case 'start':
-      statusName = '已开始';
+      statusName = t('upload.start');
       break;
     case 're-path':
-      statusName = '已保存/重复路径，跳过';
+      statusName = t('upload.re-path');
       break;
     case 'copy':
-      statusName = '复制ing';
+      statusName = t('upload.copy');
       break;
     case 'unzip':
-      statusName = '解压ing';
+      statusName = t('upload.unzip');
       break;
     case 'non-support':
-      statusName = '不支持的文件格式';
+      statusName = t('upload.nonSupport');
       break;
     case 'save':
-      statusName = '保存ing';
+      statusName = t('upload.save');
       break;
     case 'end':
-      statusName = '已完成';
+      statusName = t('upload.end');
       break;
     case 'error':
-      statusName = '发生错误，已终止';
+      statusName = t('upload.error');
       break;
     default:
   }
@@ -84,7 +86,7 @@ const selectFiles = async () => {
   const selectedPath = await open({
     multiple: true,
     directory: false,
-    title: "请选择至少一个Mod压缩文件",
+    title: t('upload.selectFilesTip'),
   });
 
   if (selectedPath) {
@@ -97,7 +99,7 @@ const selectDirs = async () => {
   const selectedPath = await open({
     multiple: true,
     directory: true,
-    title: "请选择至少一个Mod目录",
+    title: t('upload.selectDirsTip'),
   });
 
   if (selectedPath) {
@@ -115,14 +117,14 @@ async function getEnvironmentList() {
 
   } catch (error) {
     console.error('获取当前环境变量失败:', error);
-    ElMessage.error('获取当前环境变量失败:' + error)
+    ElMessage.error(t('upload.getEnvironmentFail') + error)
 
   }
 }
 
 async function receiveModsFilePath(paths) {
   if (!paths) {
-    ElMessage.error('没有获取到文件路径')
+    ElMessage.error(t('upload.getPathFail'))
     return;
   }
   try {
@@ -140,7 +142,7 @@ async function receiveModsFilePath(paths) {
     console.error('save_mods fail:', error);
     ElMessage({
       showClose: true,
-      message: '错误：' + error,
+      message: t('upload.saveModError') + error,
       type: 'error',
       duration: 0
     })

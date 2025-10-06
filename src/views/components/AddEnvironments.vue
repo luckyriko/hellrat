@@ -1,10 +1,10 @@
 <template>
   <!-- el-dialog 组件，使用 v-model 绑定 props.visible 以实现双向数据绑定 -->
-  <el-dialog v-model="showFlag" title="编辑配置" @close="handleClose" width="40%">
+  <el-dialog v-model="showFlag" :title="$t('addEnvironments.title')" @close="handleClose" width="40%">
     <div class="container">
       <div class="add-box">
-        <el-input v-model="input" placeholder="请输入配置名称" clearable size="large" />
-        <el-tooltip effect="dark" content="添加" placement="top">
+        <el-input v-model="input" :placeholder="$t('addEnvironments.placeholder')" clearable size="large" />
+        <el-tooltip effect="dark" :content="$t('addEnvironments.add')" placement="top">
           <el-button :icon="CirclePlus" @click="addEnv" text style="font-size: 20px;" />
         </el-tooltip>
       </div>
@@ -15,7 +15,7 @@
           <div class="title">
             <div v-if="!item.editFlag">{{ item.name }}</div>
             <div v-else>
-              <el-input v-model="item.editName" placeholder="请输入名称">
+              <el-input v-model="item.editName" :placeholder="$t('addEnvironments.placeholder')">
                 <template #append>
                   <el-button :icon="Select" type="primary" @click="editEnv(item)" />
                 </template>
@@ -30,16 +30,18 @@
           </div>
 
           <div>
-            <el-tooltip effect="dark" :content="item.editFlag ? '取消修改' : '修改'" placement="top">
+            <el-tooltip effect="dark"
+              :content="item.editFlag ? $t('addEnvironments.cancelEdit') : $t('addEnvironments.edit')" placement="top">
               <el-button :icon="item.editFlag ? Close : EditPen" @click="item.editFlag = !item.editFlag" text
                 style="font-size: 18px;" />
             </el-tooltip>
 
-            <el-tooltip effect="dark" content="复制" placement="top">
+            <el-tooltip effect="dark" :content="$t('addEnvironments.copy')" placement="top">
               <el-button :icon="DocumentCopy" @click="copyEnv(item)" text style="font-size: 18px;" />
             </el-tooltip>
 
-            <el-tooltip v-if="item.name != 'default'" effect="dark" content="删除" placement="top">
+            <el-tooltip v-if="item.name != 'default'" effect="dark" :content="$t('addEnvironments.delete')"
+              placement="top">
               <el-button :icon="Delete" @click="delEnv(item)" text style="font-size: 18px;" />
             </el-tooltip>
 
@@ -51,7 +53,7 @@
     </div>
     <!-- 底部插槽，提供关闭按钮 -->
     <template #footer>
-      <el-button @click="handleClose">取消</el-button>
+      <el-button @click="handleClose">{{ $t('addEnvironments.cancel') }}</el-button>
     </template>
   </el-dialog>
 </template>
@@ -60,6 +62,9 @@
 import { ref, watch } from 'vue';
 import { CirclePlus, Delete, EditPen, DocumentCopy, Select, Smoking, Close } from '@element-plus/icons-vue';
 import { invoke } from '@tauri-apps/api/core';
+import { useI18n } from 'vue-i18n';
+const { t } = useI18n();
+
 const props = defineProps({
   list: {
     type: Array,
@@ -82,7 +87,7 @@ const showFlag = defineModel();
 
 const addEnv = async () => {
   if (!input.value) {
-    ElMessage.error("请输入环境配置名称！");
+    ElMessage.error(t('addEnvironments.addTip'));
     return;
   }
   try {
@@ -91,14 +96,14 @@ const addEnv = async () => {
     input.value = '';
   } catch (error) {
     console.log(error);
-    ElMessage.error("添加失败：" + String(error))
+    ElMessage.error(t('addEnvironments.addFail') + String(error))
 
   }
 }
 
 const editEnv = async (item) => {
   if (!item.editName) {
-    ElMessage.error("请输入环境名称！");
+    ElMessage.error(t('addEnvironments.editTip'));
     return;
   }
   if (item.editName == item.name) {
@@ -111,7 +116,7 @@ const editEnv = async (item) => {
     emit('refresh');
   } catch (error) {
     console.log(error);
-    ElMessage.error("修改失败：" + String(error))
+    ElMessage.error(t('addEnvironments.editFail') + String(error))
 
   }
 }
@@ -123,14 +128,14 @@ const copyEnv = async (item) => {
     let name = item.name + '_copy';
     let envItem = props.list.find(x => x.name == name);
     if (envItem) {
-      ElMessage.error(`该名称"${name}"已存在`)
+      ElMessage.error($t('addEnvironments.sameNameError', { name }))
       return;
     }
     await invoke("copy_environment", { id: item.id, name: item.name });
     emit('refresh');
   } catch (error) {
     console.log(error);
-    ElMessage.error("复制失败：" + String(error))
+    ElMessage.error(t('addEnvironments.copyError') + String(error))
 
   }
 }
@@ -138,14 +143,14 @@ const copyEnv = async (item) => {
 const delEnv = async (item) => {
   try {
     if (item.activate == 1) {
-      ElMessage.error("当前环境正在使用，请切换到其它环境再删除！");
+      ElMessage.error(t('addEnvironments.deleteTip'));
       return
     }
     await invoke("delete_environment", { id: item.id });
     emit('refresh');
   } catch (error) {
     console.log(error);
-    ElMessage.error("删除失败：" + String(error));
+    ElMessage.error(t('addEnvironments.deleteError') + String(error));
 
   }
 }
