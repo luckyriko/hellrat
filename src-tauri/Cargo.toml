@@ -33,7 +33,7 @@ rusqlite = { version = "0.33.0", features = ["bundled"] }
 dirs = "6.0.0"
 anyhow = "1.0.95"
 rayon = "1.10.0"
-zip = "4.5.0"
+zip = "5.1.1"
 enigo = "0.5.0"
 once_cell = "1.21.3"
 tauri-plugin-store = "2"
@@ -45,3 +45,4 @@ tauri-plugin-process = "2"
 
 [target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
 tauri-plugin-global-shortcut = "2"
+tauri-plugin-single-instance = "2"

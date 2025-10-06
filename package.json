@@ -9,7 +9,8 @@
     "build": "vite build",
     "preview": "vite preview",
     "tauri": "tauri",
-    "rat": "tauri dev"
+    "rat": "tauri dev",
+    "publish": "tauri build"
   },
   "dependencies": {
     "@element-plus/icons-vue": "^2.3.2",
