@@ -332,6 +332,7 @@
     "type": "类型",
     "version": "版本号",
     "options": "存档Mod的manifest.json",
+    "addTime": "添加时间",
     "activate": "环境Mod启用状态",
     "envModId": "环境Mod标识ID",
     "envModOptions": "环境Mod的manifest.json",

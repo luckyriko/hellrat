@@ -2,7 +2,7 @@
   <!-- el-dialog 组件，使用 v-model 绑定 props.visible 以实现双向数据绑定 -->
   <el-dialog v-model="showFlag" :title="$t('showModInfo.title')" @close="handleClose" width="50%" top="5vh">
     <el-scrollbar max-height="78vh">
-      <h3 style="margin-top: 0;">{{ $t('showModInfo.base') }}</h3>
+      <h3 style="margin-top: 0;color: black;">{{ mod.name }}</h3>
       <div style="background-color: #f0f0f0;">
         <el-image :src="image" fit="cover" style="width: 100%;" v-if="image" />
       </div>
@@ -11,7 +11,7 @@
         <div>{{ value }}</div>
       </div>
 
-      <h3>{{ $t('showModInfo.installFiles') }}</h3>
+      <h3 style="color: black;">{{ $t('showModInfo.installFiles') }}</h3>
       <div class="box" v-for="(value, index) in files" :key="index" v-if="files.length > 0">
         <div>{{ value }}</div>
       </div>
@@ -54,6 +54,7 @@ const nameValue = {
   type: t('showModInfo.type'),
   version: t('showModInfo.version'),
   options: t('showModInfo.options'),
+  add_time: t('showModInfo.addTime'),
   activate: t('showModInfo.activate'),
   env_mod_id: t('showModInfo.envModId'),
   env_mod_options: t('showModInfo.envModOptions'),
@@ -72,6 +73,11 @@ async function getModDetail() {
     console.log("env_id, record_id:", props.envId, props.recordId);
 
     let modInfo = await invoke("get_env_mod_info_with_install_files", { env_id: Number(props.envId), record_id: props.recordId });
+    console.log(modInfo.info.add_time);
+
+    const date = new Date(modInfo.info.add_time);
+    modInfo.info.add_time = date.toLocaleString();
+
 
     if (modInfo.info) {
       delete modInfo.info.id;
@@ -130,5 +136,16 @@ const handleClose = () => {
   margin-left: 20px;
   align-items: center;
   margin-top: 10px;
+}
+
+/* .dialog-header{
+  font-weight: bolder;
+  .el-dialog__title{
+    font-weight: bolder !important;
+  }
+} */
+
+:deep(.el-dialog.el-dialog__title) {
+  font-weight: bolder;
 }
 </style>

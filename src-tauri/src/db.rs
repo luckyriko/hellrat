@@ -246,7 +246,7 @@ pub fn get_environment_mods_records(
     let conn = open_data_db().map_err(|e| format!("数据库连接失败: {}", e))?;
 
     let mut sql = String::from(
-        "SELECT m.id, m.uuid, m.name, m.path, m.tag, m.author, m.link, m.desc, m.icon, e.sort, m.type, m.version, e.id as env_mod_id, e.activate,
+        "SELECT m.id, m.uuid, m.name, m.path, m.tag, m.author, m.link, m.desc, m.icon, e.sort, m.type, m.version, e.id as env_mod_id, e.activate, m.add_time,
             CASE WHEN EXISTS (
                 SELECT 1 FROM mods_install_files f
                 WHERE f.record_id = e.record_id AND f.env_id = ?
@@ -292,6 +292,7 @@ pub fn get_environment_mods_records(
                 r#type: row.get("type")?,
                 version: row.get("version")?,
                 options: String::new(),
+                add_time: row.get("add_time")?,
                 activate: row.get("activate")?,
                 env_mod_id: row.get("env_mod_id").ok(),
                 env_mod_options: None,
@@ -378,6 +379,7 @@ pub fn get_mods_records_by_ids(ids: Vec<u64>) -> Result<Vec<GameMod>> {
             r#type: row.get("type")?,
             version: row.get("version")?,
             options: row.get("options")?,
+            add_time: row.get("add_time")?,
             activate: 0,
             env_mod_id: None,
             env_mod_options: None,
@@ -419,7 +421,7 @@ pub fn get_env_mod_info(id: u64, env_id: u32) -> Result<GameMod> {
     let conn = open_data_db()?;
     let record = conn
         .query_row(
-            "SELECT m.id, m.uuid, m.name, m.path, m.tag, m.author, m.link, m.desc, m.icon, e.sort, m.type, m.version, e.id as env_mod_id, e.activate, e.options as env_mod_options,
+            "SELECT m.id, m.uuid, m.name, m.path, m.tag, m.author, m.link, m.desc, m.icon, e.sort, m.type, m.version, e.id as env_mod_id, e.activate, e.options as env_mod_options, m.add_time,
                     CASE WHEN EXISTS (
                         SELECT 1 FROM mods_install_files f
                         WHERE f.record_id = e.record_id AND f.env_id = ?
@@ -442,6 +444,7 @@ pub fn get_env_mod_info(id: u64, env_id: u32) -> Result<GameMod> {
                     r#type: row.get("type")?,
                     version: row.get("version")?,
                     options: String::new(),
+                    add_time: row.get("add_time")?,
                     activate: row.get("activate")?,
                     env_mod_id: row.get("env_mod_id").ok(),
                     env_mod_options : row.get("env_mod_options").ok(),
