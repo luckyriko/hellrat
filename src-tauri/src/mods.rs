@@ -577,7 +577,10 @@ fn copy_mod_files_to_game_data_dir_by_options(
                     if sub_options.len() > 0 {
                         if let Some(sub_op) = sub_options.get(sub_option_index as usize) {
                             println!("sub_options选择的Include将要被安装: {:#?}", &sub_op.Include);
+                                    
                             for include in &sub_op.Include {
+                                println!("sub_options选择的Include安装路径: {:#?} 复制到 {:#?}", &mod_path.join(include),game_data_path);
+
                                 let mut files = copy_mod_files_to_game_data_dir(
                                     &mod_path.join(include),
                                     game_data_path,
