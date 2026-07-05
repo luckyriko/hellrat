@@ -40,7 +40,7 @@ Just download the latest version, reinstall.
 
 ## Preparation
 
-You need to install [node](https://nodejs.org/) and [git](https://git-scm.com/) locally. The project is based on [tauri2](https://v2.tauri.app//), [vue3](https://vuejs.org/), [pinia](https://pinia.vuejs.org/), [vue-router](https://router.vuejs.org/), [vue-i18n](https://vue-i18n.intlify.dev/), [vite](https://vite.dev/), [sortable](https://github.com/sortablejs/Sortable) and [element-plus](https://element-plus.org/).
+You need to install [node](https://nodejs.org/), [rust](https://rust-lang.org/) and [git](https://git-scm.com/) locally. The project is based on [tauri2](https://v2.tauri.app//), [vue3](https://vuejs.org/), [pinia](https://pinia.vuejs.org/), [vue-router](https://router.vuejs.org/), [vue-i18n](https://vue-i18n.intlify.dev/), [vite](https://vite.dev/), [sortable](https://github.com/sortablejs/Sortable) and [element-plus](https://element-plus.org/).
 Understanding and learning this knowledge in advance will greatly help the use of this project.
 
 
